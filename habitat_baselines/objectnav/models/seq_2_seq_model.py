@@ -100,6 +100,7 @@ class Seq2SeqNet(Net):
                     trainable=model_config.RGB_ENCODER.train_encoder,
                     normalize_visual_inputs=model_config.normalize_visual_inputs,
                     obs_augmentations=obs_augmentations,
+                    resnet_baseplanes=model_config.resnet_baseplanes,
                 )
                 rnn_input_size += model_config.RGB_ENCODER.output_size
             else:
