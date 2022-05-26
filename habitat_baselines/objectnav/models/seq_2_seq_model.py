@@ -107,6 +107,8 @@ class Seq2SeqNet(Net):
                 self.rgb_encoder = None
         else:
             logger.info("Setting up no vision baseline")
+        
+        self.is_thda = model_config.SEMANTIC_ENCODER.is_thda
 
         if EpisodicGPSSensor.cls_uuid in observation_space.spaces:
             input_gps_dim = observation_space.spaces[
@@ -136,6 +138,8 @@ class Seq2SeqNet(Net):
                 )
                 + 1
             )
+            if self.is_thda:
+                self._n_object_categories = 28
             self.obj_categories_embedding = nn.Embedding(
                 self._n_object_categories, 32
             )

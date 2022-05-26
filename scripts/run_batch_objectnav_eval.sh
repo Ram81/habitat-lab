@@ -28,4 +28,4 @@ set -x
 echo "In ObjectNav Env DDP"
 srun python -u -m habitat_baselines.run \
 --exp-config  $path \
---run-type eval
+--run-type eval \

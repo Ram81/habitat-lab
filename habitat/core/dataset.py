@@ -12,6 +12,7 @@ import copy
 import json
 import os
 import random
+from collections import namedtuple
 from itertools import groupby
 from typing import (
     Any,
@@ -50,6 +51,7 @@ class ObjectInScene:
 class SceneState:
     objects: List[ObjectInScene] = attr.ib(default=None)
 
+EpisodeInfo = namedtuple("EpisodeInfo", ["episode_id", "scene_id"])
 
 @attr.s(auto_attribs=True, kw_only=True)
 class Episode:

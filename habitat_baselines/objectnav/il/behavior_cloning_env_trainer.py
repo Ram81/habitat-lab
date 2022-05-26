@@ -700,7 +700,7 @@ class ObjectNavBCEnvTrainer(BaseRLTrainer):
             len(stats_episodes) < number_of_eval_episodes
             and self.envs.num_envs > 0
         ):
-            current_episodes = self.envs.current_episodes()
+            current_episodes = self.envs.current_episodes_info()
 
             with torch.no_grad():
                 if self.semantic_predictor is not None:
@@ -754,7 +754,7 @@ class ObjectNavBCEnvTrainer(BaseRLTrainer):
                 rewards_l, dtype=torch.float, device=self.device
             ).unsqueeze(1)
             current_episode_reward += rewards
-            next_episodes = self.envs.current_episodes()
+            next_episodes = self.envs.current_episodes_info()
             envs_to_pause = []
             n_envs = self.envs.num_envs
             for i in range(n_envs):
@@ -785,17 +785,17 @@ class ObjectNavBCEnvTrainer(BaseRLTrainer):
                     current_episode_steps[i] = 0
                     current_episode_cross_entropy[i] = 0
 
-                    ep_metrics = copy.deepcopy(episode_stats)
-                    if "room_visitation_map" in infos[i]:
-                        ep_metrics["room_visitation_map"] = infos[i]["room_visitation_map"]
-                    if "exploration_metrics" in infos[i]:
-                        ep_metrics["exploration_metrics"] = infos[i]["exploration_metrics"]
-                    evaluation_meta.append({
-                        "scene_id": current_episodes[i].scene_id,
-                        "episode_id": current_episodes[i].episode_id,
-                        "metrics": ep_metrics,
-                        "object_category": current_episodes[i].object_category
-                    })
+                    # ep_metrics = copy.deepcopy(episode_stats)
+                    # if "room_visitation_map" in infos[i]:
+                    #     ep_metrics["room_visitation_map"] = infos[i]["room_visitation_map"]
+                    # if "exploration_metrics" in infos[i]:
+                    #     ep_metrics["exploration_metrics"] = infos[i]["exploration_metrics"]
+                    # evaluation_meta.append({
+                    #     "scene_id": current_episodes[i].scene_id,
+                    #     "episode_id": current_episodes[i].episode_id,
+                    #     "metrics": ep_metrics,
+                    #     "object_category": current_episodes[i].object_category
+                    # })
                     # write_json(evaluation_meta, self.config.EVAL.evaluation_meta_file)
                     # use scene_id + episode_id as unique id for storing stats
                     stats_episodes[

@@ -188,6 +188,8 @@ class SemSegSeqNet(Net):
                 )
                 + 1
             )
+            if self.is_thda:
+                self._n_object_categories = 28
             logger.info("Object categories: {}".format(self._n_object_categories))
             self.obj_categories_embedding = nn.Embedding(
                 self._n_object_categories, 32

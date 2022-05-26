@@ -14,7 +14,7 @@ import numpy as np
 from gym import spaces
 
 from habitat.config import Config
-from habitat.core.dataset import Dataset, Episode, EpisodeIterator
+from habitat.core.dataset import Dataset, Episode, EpisodeInfo, EpisodeIterator
 from habitat.core.embodied_task import EmbodiedTask, Metrics
 from habitat.core.simulator import Observations, Simulator
 from habitat.datasets import make_dataset
@@ -181,6 +181,13 @@ class Env:
             self._episode_start_time
         ), "Elapsed seconds requested before episode was started."
         return time.time() - self._episode_start_time
+
+    def current_episode_info(self) -> EpisodeInfo:
+        assert self._current_episode is not None
+        return EpisodeInfo(
+            episode_id=self._current_episode.episode_id,
+            scene_id=self._current_episode.scene_id,
+        )
 
     def get_metrics(self) -> Metrics:
         return self._task.measurements.get_metrics()
@@ -402,6 +409,12 @@ class RLEnv(gym.Env):
     @property
     def current_episode(self) -> Episode:
         return self._env.current_episode
+    
+    def current_episode_info(self) -> EpisodeInfo:
+        return EpisodeInfo(
+            episode_id=self._env.current_episode.episode_id,
+            scene_id=self._env.current_episode.scene_id,
+        )
 
     @profiling_wrapper.RangeContext("RLEnv.reset")
     def reset(self) -> Observations:
