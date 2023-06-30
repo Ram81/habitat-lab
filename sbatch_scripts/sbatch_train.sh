@@ -16,7 +16,7 @@
 
 . /public/apps/anaconda3/5.0.1/etc/profile.d/conda.sh
 conda deactivate
-conda activate /private/home/alexclegg/.conda/envs/habitat_il
+conda activate habitat_objnav # /private/home/alexclegg/.conda/envs/habitat_il
 
 module purge
 module load cuda/11.0
@@ -45,9 +45,9 @@ echo "Commands Provided: " $CMD_OPTS
 echo "MAIN Address: " $MAIN_ADDR
 
 printenv | grep SLURM
-cd habitat_baselines/
+#cd habitat_baselines/
 srun -u --kill-on-bad-exit=1 \
-    python -u -m run \
+    python -u -m habitat_baselines.run \
     --run-type train \
     ${CMD_OPTS}
 

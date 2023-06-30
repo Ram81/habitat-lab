@@ -28,11 +28,11 @@ run_training() {
 	         CHECKPOINT_FOLDER ${CHKP_DIR} \
 	         TENSORBOARD_DIR ${LOG_DIR} \
 	         VIDEO_DIR ${VIDEO_DIR} \
-		 RESULTS_DIR ${RESULTS_DIR}/{split}/{type} \
-		 INTERRUPTED_STATE_FILE ${INTERRUPTED_STATE_FILE} \
+		 	 RESULTS_DIR ${RESULTS_DIR}/{split}/{type} \
+		 	 INTERRUPTED_STATE_FILE ${INTERRUPTED_STATE_FILE} \
 	         MODEL.RGB_ENCODER.pretrained_ckpt ${REPO_PATH}/data/new_checkpoints/rgb_encoders/${WEIGHTS_NAME} \
-		 MODEL.DEPTH_ENCODER.ddppo_checkpoint ${REPO_PATH}/data/ddppo-models/gibson-2plus-resnet50.pth \
-                 MODEL.SEMANTIC_ENCODER.rednet_ckpt ${REPO_PATH}/data/rednet-models/rednet_semmap_mp3d_40_v2_vince.pth \
+		 	 MODEL.DEPTH_ENCODER.ddppo_checkpoint ${REPO_PATH}/data/ddppo-models/gibson-2plus-resnet50.pth \
+             MODEL.SEMANTIC_ENCODER.rednet_ckpt ${REPO_PATH}/data/rednet-models/rednet_semmap_mp3d_40_v2_vince.pth \
 	         TASK_CONFIG.DATASET.SCENES_DIR ${REPO_PATH}/data/scene_datasets \
 	         RL.DDPPO.backbone ${BACKBONE} \
 	         TASK_CONFIG.SEED ${SEED} \
@@ -42,8 +42,8 @@ run_training() {
 
 	     CMD_TRAIN_OPTS="${CMD_COMMON_OPTS} \
 	         TASK_CONFIG.DATASET.SPLIT train \
-	         TASK_CONFIG.DATASET.DATA_PATH ${REPO_PATH}/data/datasets/objectnav_mp3d/${ENVIRONMENT}/${SPLIT}/${SPLIT}.json.gz \
-		 NUM_PROCESSES ${NUM_PROCESSES}"
+	         TASK_CONFIG.DATASET.DATA_PATH ${REPO_PATH}/data/datasets/objectnav/objectnav_mp3d/${ENVIRONMENT}/${SPLIT}/${SPLIT}.json.gz \
+		 	 NUM_PROCESSES ${NUM_PROCESSES}"
 	         #NUM_ENVIRONMENTS ${NUM_ENV} \
 	         #WANDB_NAME ${EXP_NAME} \
 	         #WANDB_MODE ${WANDB_MODE}"

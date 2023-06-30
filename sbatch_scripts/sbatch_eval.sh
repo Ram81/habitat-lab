@@ -15,7 +15,7 @@
 
 . /public/apps/anaconda3/5.0.1/etc/profile.d/conda.sh
 conda deactivate
-conda activate /private/home/alexclegg/.conda/envs/habitat_il
+conda activate habitat_objnav #/private/home/alexclegg/.conda/envs/habitat_il
 
 module purge
 module load cuda/11.0
