@@ -44,6 +44,7 @@ class ObjectSampler:
         recep_set_sample_probs: Optional[Dict[str, float]] = None,
         translation_up_offset: float = 0.08,
         constrain_to_largest_nav_island: bool = False,
+        fixed_object_handles: List[str] = None,
     ) -> None:
         """
         :param object_set: The set objects from which placements will be sampled.
@@ -62,12 +63,12 @@ class ObjectSampler:
         self._translation_up_offset = translation_up_offset
         self._constrain_to_largest_nav_island = constrain_to_largest_nav_island
 
-        self.receptacle_instances: Optional[
-            List[Receptacle]
-        ] = None  # all receptacles in the scene
-        self.receptacle_candidates: Optional[
-            List[Receptacle]
-        ] = None  # the specific receptacle instances relevant to this sampler
+        self.receptacle_instances: Optional[List[Receptacle]] = (
+            None  # all receptacles in the scene
+        )
+        self.receptacle_candidates: Optional[List[Receptacle]] = (
+            None  # the specific receptacle instances relevant to this sampler
+        )
         self.max_sample_attempts = 100  # number of distinct object|receptacle pairings to try before giving up
         self.max_placement_attempts = 50  # number of times to attempt a single object|receptacle placement pairing
         self.num_objects = num_objects  # tuple of [min,max] objects to sample
@@ -84,6 +85,7 @@ class ObjectSampler:
         # - surface vs volume
         # - apply physics stabilization: none, dynamic, projection
         self.largest_island_id = -1
+        self.fixed_object_handles = fixed_object_handles
 
     def reset(self) -> None:
         """
@@ -272,9 +274,36 @@ class ObjectSampler:
                 assert sim.get_object_template_manager().get_library_has_handle(
                     object_handle
                 ), f"Found no object in the SceneDataset with handle '{object_handle}'."
-                new_object = sim.get_rigid_object_manager().add_object_by_template_handle(
+                rom = sim.get_rigid_object_manager()
+                otm = sim.get_object_template_manager()
+
+                object_template = otm.get_templates_by_handle_substring(
                     object_handle
                 )
+
+                # Exit if template is invalid
+                if not object_template:
+                    raise ValueError(
+                        f"Template not found for object with handle {obj_handle}"
+                    )
+
+                # Get object path
+                object_path = list(object_template.keys())[0]
+                object_template[object_path].scale = mn.Vector3(2.0, 2.0, 2.0)
+
+                # Remove old object template
+                otm.remove_template_by_handle(object_handle)
+
+                # Register new object template
+                template_id = otm.register_template(
+                    object_template[object_path], object_handle
+                )
+
+                # Add rigid object from template
+                new_object = rom.add_object_by_template_id(template_id)
+                # new_object = rom.add_object_by_template_handle(
+                #     object_handle
+                # )
 
             # try to place the object
             new_object.translation = target_object_position

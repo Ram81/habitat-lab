@@ -98,7 +98,7 @@ class NavigationEpisode(Episode):
     """
 
     goals: List[NavigationGoal] = attr.ib(
-        default=None,
+        default=[],
         validator=not_none_validator,
         on_setattr=Episode._reset_shortest_path_cache_hook,
     )

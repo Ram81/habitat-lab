@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch import Tensor
+import numpy as np
 
 from habitat import logger
 from habitat.utils import profiling_wrapper
@@ -26,8 +27,14 @@ from habitat_baselines.utils.common import (
     inference_mode,
 )
 from habitat_baselines.utils.timing import g_timer
+import pickle
 
 EPS_PPO = 1e-5
+
+
+def save_pickle(data, path):
+    file = open(path, "wb")
+    data = pickle.dump(data, file)
 
 
 @baseline_registry.register_updater
@@ -251,6 +258,17 @@ class PPO(nn.Module, Updater):
 
         total_loss = self.before_backward(total_loss)
         total_loss.backward()
+
+        # out_path = f"gradients_{epoch}.npy"
+
+        # grads = {}
+        # for idx, (k, param) in enumerate(self.actor_critic.named_parameters()):
+        #     if param.grad is not None:
+        #         grads[k] = param.grad.data.detach().cpu().numpy()
+        #         print(f"Gradients for {k} are {grads[f'{k}'].shape}")
+        # print(f"Gradients  {grads.keys()}")
+        # save_pickle(grads, out_path)
+
         self.after_backward(total_loss)
 
         grad_norm = self.before_step()

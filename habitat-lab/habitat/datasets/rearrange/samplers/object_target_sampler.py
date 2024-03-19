@@ -24,6 +24,7 @@ class ObjectTargetSampler(ObjectSampler):
     def __init__(
         self,
         object_instance_set: List[habitat_sim.physics.ManagedRigidObject],
+        sample_on_different_receptacle: bool = False,
         *args,
         **kwargs,
     ) -> None:
@@ -31,6 +32,7 @@ class ObjectTargetSampler(ObjectSampler):
         Initialize a standard ObjectSampler but construct the object_set to correspond with specific object instances provided.
         """
         self.object_instance_set = object_instance_set
+        self.sample_on_different_receptacle = sample_on_different_receptacle
         object_set = [
             x.creation_attributes.handle for x in self.object_instance_set
         ]

@@ -273,10 +273,10 @@ class PPOTrainer(BaseRLTrainer):
             assert (
                 self._encoder is not None
             ), "Visual encoder is not specified for this actor"
-            with inference_mode():
-                batch[
-                    PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-                ] = self._encoder(batch)
+            # with torch.no_grad():
+            batch[
+                PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
+            ] = self._encoder(batch)
 
         self._agent.rollouts.insert_first_observations(batch)
 
@@ -465,7 +465,7 @@ class PPOTrainer(BaseRLTrainer):
             )
 
         if self._is_static_encoder:
-            with inference_mode(), g_timer.avg_time("trainer.visual_features"):
+            with g_timer.avg_time("trainer.visual_features"):
                 batch[
                     PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
                 ] = self._encoder(batch)
@@ -682,10 +682,10 @@ class PPOTrainer(BaseRLTrainer):
             count_checkpoints = requeue_stats["count_checkpoints"]
             prev_time = requeue_stats["prev_time"]
 
-            self.running_episode_stats = requeue_stats["running_episode_stats"]
-            self.window_episode_stats.update(
-                requeue_stats["window_episode_stats"]
-            )
+            # self.running_episode_stats = requeue_stats["running_episode_stats"]
+            # self.window_episode_stats.update(
+            #     requeue_stats["window_episode_stats"]
+            # )
             resume_run_id = requeue_stats.get("run_id", None)
 
         with (
@@ -838,7 +838,10 @@ class PPOTrainer(BaseRLTrainer):
             ckpt_dict["config"]
         )
         with read_write(config):
+            config.habitat_baselines.num_environments = self.config.habitat_baselines.num_environments
             config.habitat.dataset.split = config.habitat_baselines.eval.split
+            config.habitat.dataset.data_path = self.config.habitat.dataset.data_path
+        print("config data", config.habitat.dataset, self.config.habitat.dataset)
 
         if len(self.config.habitat_baselines.eval.video_option) > 0:
             n_agents = len(config.habitat.simulator.agents)
@@ -884,7 +887,11 @@ class PPOTrainer(BaseRLTrainer):
         if "extra_state" in ckpt_dict and "step" in ckpt_dict["extra_state"]:
             step_id = ckpt_dict["extra_state"]["step"]
 
+        #with read_write(config):
+        #    config.habitat_baselines.evaluator["_target_"] = "habitat_transformers.trainer.TransformersHabitatEvaluator"
+
         evaluator = hydra.utils.instantiate(config.habitat_baselines.evaluator)
+        print("Evaluator", evaluator, config.habitat_baselines.evaluator)
         assert isinstance(evaluator, Evaluator)
         evaluator.evaluate_agent(
             self._agent,
