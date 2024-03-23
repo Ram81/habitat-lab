@@ -86,9 +86,9 @@ class ControllerHelper:
                     self._find_gui_controlled_agent_config(agent_index)
                 )
                 if gui_controlled_agent_config:
-                    agent_name: str = (
-                        self._env.sim.habitat_config.agents_order[agent_index]
-                    )
+                    agent_name: str = self._env.sim.habitat_config.agents_order[
+                        agent_index
+                    ]
                     articulated_agent_type: str = (
                         self._env.sim.habitat_config.agents[
                             agent_name
@@ -132,9 +132,13 @@ class ControllerHelper:
                         articulated_agent = self._env._sim.agents_mgr[agent_index].articulated_agent  # type: ignore[attr-defined]
 
                         # sloppy: derive turn scale. This is the change in yaw (in radians) corresponding to a base ang vel action of 1.0. See also Habitat-lab BaseVelAction.
+                        print(config.habitat.task.actions)
+
                         turn_scale = (
                             config.habitat.simulator.ctrl_freq
-                            / config.habitat.task.actions.agent_0_base_velocity.ang_speed
+                            / config.habitat.task.actions[
+                                f"{agent_k}_base_velocity"
+                            ].ang_speed
                         )
 
                         gui_agent_controller = GuiRobotController(
