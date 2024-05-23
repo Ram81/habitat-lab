@@ -8,12 +8,18 @@ from enum import Enum
 
 import magnum as mn
 import numpy as np
+import quaternion
 from gym import spaces
-
 from habitat.articulated_agent_controllers import HumanoidRearrangeController
 from habitat.core.registry import registry
 from habitat.sims.habitat_simulator.debug_visualizer import DebugVisualizer
 from habitat.tasks.rearrange.actions.actions import HumanoidJointAction
+from habitat.utils.geometry_utils import (
+    quaternion_from_coeff,
+    quaternion_from_two_vectors,
+    quaternion_rotate_vector,
+)
+from habitat_sim.utils.common import quat_from_angle_axis, quat_from_magnum
 
 
 class HandState(Enum):
@@ -100,16 +106,111 @@ class HumanoidPickAction(HumanoidJointAction):
         obj_id = self._task.pddl_problem.sim_info.obj_ids[entity_name]
         return self._sim.scene_obj_ids[obj_id]
 
+    def _direction_to_quaternion(
+        self, direction_vector: np.ndarray, origin_vector: np.ndarray
+    ):
+        output = quaternion_from_two_vectors(origin_vector, direction_vector)
+        output = output.normalized()
+        return output
+
+    def quaternion_to_euler(self, q):
+        """
+        Convert a quaternion to Euler angles (roll, pitch, yaw) in radians.
+
+        Parameters:
+            q (quaternion): The quaternion to convert.
+
+        Returns:
+            tuple: Euler angles (roll, pitch, yaw) in radians.
+        """
+        # Convert quaternion to rotation matrix
+        rotation_matrix = quaternion.as_rotation_matrix(q)
+
+        # Extract Euler angles from rotation matrix
+        roll = np.arctan2(rotation_matrix[2, 1], rotation_matrix[2, 2])
+        pitch = np.arctan2(
+            -rotation_matrix[2, 0],
+            np.sqrt(rotation_matrix[2, 1] ** 2 + rotation_matrix[2, 2] ** 2),
+        )
+        yaw = np.arctan2(rotation_matrix[1, 0], rotation_matrix[0, 0])
+
+        # return np.degrees(roll), np.degrees(pitch), np.degrees(yaw)
+        return [roll, pitch * 0.75, 0]
+
+    def calculate_turn_delta(self, sensor_object, cam_offset, goal_postion):
+        agent_pose = sensor_object.node.translation  # + cam_offset
+        agent_rotation = sensor_object.node.rotation
+
+        target_pose = goal_postion
+        if not isinstance(agent_rotation, quaternion.quaternion):
+            rot = np.array(agent_rotation.vector).tolist() + [
+                agent_rotation.scalar
+            ]
+            agent_rotation = quaternion_from_coeff(rot)
+
+        position_delta = target_pose - agent_pose
+
+        pos_without_y = np.array([position_delta[0], 0, position_delta[2]])
+        rot_z = self._direction_to_quaternion(
+            pos_without_y, np.array([0, 0, -1])
+        )
+
+        _, y, _ = self.quaternion_to_euler(rot_z)
+        if abs(y) > 180:
+            sign = 1 if y > 0 else -1
+            new_y = 360 - abs(y)
+            rot_z = quat_from_angle_axis(
+                np.deg2rad(new_y) * sign * -1, np.array([0, 0, 1])
+            )
+
+        pos_without_x = np.array([0, position_delta[1], position_delta[2]])
+        y_direction = abs(goal_postion[1]) - abs(agent_pose[1])
+        y_direction = -1 if y_direction > 0 else 1
+        rot_y = self._direction_to_quaternion(
+            pos_without_x, np.array([0, y_direction, 0])
+        )
+
+        p, _, _ = self.quaternion_to_euler(rot_y)
+        if abs(p) > 90:
+            sign = 1 if p > 0 else -1
+            rot_y = quat_from_angle_axis(1.57 * sign, np.array([1, 0, 0]))
+
+        rotation = rot_z * rot_y
+        rotation = self.quaternion_to_euler(rotation)
+        return position_delta, rotation
+
+    def patch_camera_orientation(self, target_pos):
+        articulated_agent = self._sim.get_agent_data(0).articulated_agent
+        for cam_prefix, sensor_names in articulated_agent._cameras.items():
+            for sensor_name in sensor_names:
+                sens_obj = self._sim._sensors[sensor_name]._sensor_object
+                if "head_rgb" not in sensor_name:
+                    continue
+
+                cam_offset = articulated_agent._camera_metadata[sensor_name][
+                    "look_at_offset"
+                ]
+                pos, rot_delta = self.calculate_turn_delta(
+                    sens_obj,
+                    cam_offset,
+                    target_pos,
+                )
+                articulated_agent._camera_metadata[sensor_name] = {
+                    "look_at_changed": True,
+                    "look_at_offset": cam_offset,
+                    "rot_delta": rot_delta,
+                }
+
     def step(self, *args, **kwargs):
         self.skill_done = False
-        object_pick_idx = kwargs[
-            self._action_arg_prefix + "humanoid_pick_action"
-        ][0]
+        object_pick_idx = (
+            kwargs[self._action_arg_prefix + "humanoid_pick_action"][0] - 1
+        )
         should_pick = kwargs[self._action_arg_prefix + "humanoid_pick_action"][
             1
         ]
 
-        if object_pick_idx <= 0 or object_pick_idx > len(self._entities):
+        if object_pick_idx < 0 or object_pick_idx > len(self._entities):
             return
 
         object_coord = self._get_coord_for_idx(object_pick_idx)
@@ -126,6 +227,8 @@ class HumanoidPickAction(HumanoidJointAction):
             np.linalg.norm(object_coord - init_coord_world)
             / self.dist_move_per_step
         )
+        # if not should_pick:
+        #     print("[Place] dist_hand_obj: ", self.hand_state, object_coord)
 
         should_rest = False
         if self.hand_state == HandState.APPROACHING:  # Approaching
@@ -141,24 +244,24 @@ class HumanoidPickAction(HumanoidJointAction):
                     self.hand_pose_iter + 1, max_num_iters
                 )
                 dist_hand_obj = np.linalg.norm(object_coord - new_hand_coord)
+                # if not should_pick:
+                #     print("[Place] dist_hand_obj: ", dist_hand_obj)
                 if dist_hand_obj < self.dist_to_snap:
                     # snap,
                     self.hand_state = HandState.RETRACTING
                     if should_pick:
-                        object_index = self.get_scene_index_obj(
-                            object_pick_idx
-                        )
+                        object_index = self.get_scene_index_obj(object_pick_idx)
                         if self.cur_grasp_mgr.snap_idx is None:
                             self.cur_grasp_mgr.snap_to_obj(
                                 object_index,
                             )
                         self._sim.internal_step(-1)
                     else:
-                        obj_grabbed = self.cur_grasp_mgr.snap_rigid_obj()
+                        obj_grabbed = self.cur_grasp_mgr.snap_rigid_obj
                         self.cur_grasp_mgr.desnap(True)
                         if obj_grabbed is not None:
-                            obj_grabbed.transformation = (
-                                mn.Matrix4.translation(object_coord)
+                            obj_grabbed.transformation = mn.Matrix4.translation(
+                                object_coord
                             )
             else:
                 should_rest = True
@@ -182,6 +285,7 @@ class HumanoidPickAction(HumanoidJointAction):
 
         base_action = self.humanoid_controller.get_pose()
         kwargs[f"{self._action_arg_prefix}human_joints_trans"] = base_action
+        self.patch_camera_orientation(object_coord)
 
         HumanoidJointAction.step(self, *args, **kwargs)
         return

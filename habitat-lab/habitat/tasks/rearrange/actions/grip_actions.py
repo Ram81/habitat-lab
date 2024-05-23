@@ -9,9 +9,9 @@ from typing import Optional, Union
 import magnum as mn
 import numpy as np
 from gym import spaces
-
 from habitat.articulated_agents.robots.spot_robot import SpotRobot
 from habitat.articulated_agents.robots.stretch_robot import StretchRobot
+from habitat.core.logging import logger
 from habitat.core.registry import registry
 from habitat.tasks.rearrange.actions.articulated_agent_action import (
     ArticulatedAgentAction,
@@ -44,6 +44,7 @@ class MagicGraspAction(GripSimulatorTaskAction):
     def _grasp(self):
         scene_obj_pos = self._sim.get_scene_pos()
         ee_pos = self.cur_articulated_agent.ee_transform().translation
+        logger.info(f"GRIp action: {len(scene_obj_pos)}")
         # Get objects we are close to.
         if len(scene_obj_pos) != 0:
             # Get the target the EE is closest to.
@@ -56,6 +57,9 @@ class MagicGraspAction(GripSimulatorTaskAction):
             )
 
             keep_T = mn.Matrix4.translation(mn.Vector3(0.1, 0.0, 0.0))
+            logger.info(
+                f"GRIp action: {to_target} {self._config.grasp_thresh_dist}"
+            )
 
             if to_target < self._config.grasp_thresh_dist:
                 self.cur_grasp_mgr.snap_to_obj(
@@ -68,6 +72,8 @@ class MagicGraspAction(GripSimulatorTaskAction):
 
         # Get markers we are close to.
         markers = self._sim.get_all_markers()
+
+        logger.info(f"GRIp action markers: {len(markers)}")
         if len(markers) > 0:
             names = list(markers.keys())
             pos = np.array([markers[k].get_current_position() for k in names])
@@ -77,6 +83,10 @@ class MagicGraspAction(GripSimulatorTaskAction):
             )
 
             to_target = np.linalg.norm(ee_pos - pos[closest_idx], ord=2)
+
+            logger.info(
+                f"GRIp action markers: {len(markers)} {to_target} {self._config.grasp_thresh_dist}"
+            )
 
             if to_target < self._config.grasp_thresh_dist:
                 self.cur_articulated_agent.open_gripper()

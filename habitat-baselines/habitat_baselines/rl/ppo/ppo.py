@@ -12,8 +12,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch import Tensor
-
 from habitat import logger
 from habitat.utils import profiling_wrapper
 from habitat_baselines.common.baseline_registry import baseline_registry
@@ -26,6 +24,7 @@ from habitat_baselines.utils.common import (
     inference_mode,
 )
 from habitat_baselines.utils.timing import g_timer
+from torch import Tensor
 
 EPS_PPO = 1e-5
 
@@ -313,9 +312,7 @@ class PPO(nn.Module, Updater):
             )
 
             for _bid, batch in enumerate(data_generator):
-                self._update_from_batch(
-                    batch, epoch, rollouts, learner_metrics
-                )
+                self._update_from_batch(batch, epoch, rollouts, learner_metrics)
 
             profiling_wrapper.range_pop()  # PPO.update epoch
 

@@ -12,11 +12,10 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Union
 
 import numpy as np
-from omegaconf import OmegaConf
-
 from habitat.core.dataset import Dataset, Episode
 from habitat.core.simulator import Observations, SensorSuite, Simulator
 from habitat.core.spaces import ActionSpace, EmptySpace, Space
+from omegaconf import OmegaConf
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig

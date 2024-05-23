@@ -6,7 +6,6 @@ from typing import Any
 
 import gym.spaces as spaces
 import torch
-
 from habitat_baselines.rl.hrl.skills.skill import SkillPolicy
 from habitat_baselines.rl.ppo.policy import PolicyActionData
 
@@ -22,7 +21,7 @@ class WaitSkillPolicy(SkillPolicy):
         self._wait_time = -1
 
     def _parse_skill_arg(self, skill_name: str, skill_arg: str) -> Any:
-        self._wait_time = int(skill_arg[0])
+        self._wait_time = 1  # int(skill_arg[0])
         self._internal_log(f"Requested wait time {self._wait_time}")
 
     def _is_skill_done(

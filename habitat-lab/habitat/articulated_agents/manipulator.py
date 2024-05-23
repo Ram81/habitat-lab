@@ -7,10 +7,8 @@ from typing import Dict, List, Optional, Tuple
 
 import magnum as mn
 import numpy as np
-
-from habitat.articulated_agents.articulated_agent_interface import (
-    ArticulatedAgentInterface,
-)
+from habitat.articulated_agents.articulated_agent_interface import \
+    ArticulatedAgentInterface
 from habitat_sim.physics import JointMotorSettings, MotionType
 from habitat_sim.simulator import Simulator
 from habitat_sim.utils.common import orthonormalize_rotation_shear
@@ -88,9 +86,9 @@ class Manipulator(ArticulatedAgentInterface):
             # automatic joint limit clamping after each call to sim.step_physics()
             self.sim_obj.auto_clamp_joint_limits = True
         for link_id in self.sim_obj.get_link_ids():
-            self.joint_pos_indices[
-                link_id
-            ] = self.sim_obj.get_link_joint_pos_offset(link_id)
+            self.joint_pos_indices[link_id] = (
+                self.sim_obj.get_link_joint_pos_offset(link_id)
+            )
             self.joint_dof_indices[link_id] = self.sim_obj.get_link_dof_offset(
                 link_id
             )
@@ -172,16 +170,13 @@ class Manipulator(ArticulatedAgentInterface):
                             mn.Vector3(0, 1, 0),
                         )
                     cam_transform = (
-                        link_trans
-                        @ cam_transform
-                        @ cam_info.relative_transform
+                        link_trans @ cam_transform @ cam_info.relative_transform
                     )
                     cam_transform = inv_T @ cam_transform
 
                     sens_obj.node.transformation = (
                         orthonormalize_rotation_shear(cam_transform)
                     )
-
         if self._fix_joint_values is not None:
             self.arm_joint_pos = self._fix_joint_values
 
@@ -250,9 +245,7 @@ class Manipulator(ArticulatedAgentInterface):
         """Gets the joint states necessary to achieve the desired end-effector
         configuration.
         """
-        raise NotImplementedError(
-            "Currently no implementation for generic IK."
-        )
+        raise NotImplementedError("Currently no implementation for generic IK.")
 
     def ee_transform(self, ee_index: int = 0) -> mn.Matrix4:
         """Gets the transformation of the end-effector location. This is offset

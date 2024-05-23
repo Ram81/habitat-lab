@@ -8,20 +8,11 @@ import math
 import os
 import random
 from multiprocessing.context import BaseContext
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    TypeVar,
-)
+from typing import (TYPE_CHECKING, Any, Callable, Iterable, List, Optional,
+                    Sequence, TypeVar)
 
 import attr
 import numpy as np
-
 from habitat import RLEnv, logger, make_dataset
 from habitat.config import read_write
 from habitat.gym import make_gym_from_config
@@ -29,26 +20,19 @@ from habitat.gym.gym_env_episode_count_wrapper import EnvCountEpisodeWrapper
 from habitat.gym.gym_env_obs_dict_wrapper import EnvObsDictWrapper
 from habitat_baselines.common.tensor_dict import NDArrayDict, TensorDict
 from habitat_baselines.rl.ver.queue import BatchedQueue
-from habitat_baselines.rl.ver.task_enums import (
-    EnvironmentWorkerTasks,
-    ReportWorkerTasks,
-)
-from habitat_baselines.rl.ver.worker_common import (
-    ProcessBase,
-    WorkerBase,
-    WorkerQueues,
-)
-from habitat_baselines.utils.common import (
-    inference_mode,
-    is_continuous_action_space,
-)
+from habitat_baselines.rl.ver.task_enums import (EnvironmentWorkerTasks,
+                                                 ReportWorkerTasks)
+from habitat_baselines.rl.ver.worker_common import (ProcessBase, WorkerBase,
+                                                    WorkerQueues)
+from habitat_baselines.utils.common import (inference_mode,
+                                            is_continuous_action_space)
 from habitat_baselines.utils.timing import Timing
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
 
-MIN_SCENES_PER_ENV = 16
+MIN_SCENES_PER_ENV = 1
 
 T = TypeVar("T")
 

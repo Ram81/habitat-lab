@@ -112,11 +112,11 @@ class Predicate:
             sim_info.pred_truth_cache[self_repr] = result
         return result
 
-    def set_state(self, sim_info: PddlSimInfo) -> None:
+    def set_state(self, sim_info: PddlSimInfo, action: str = None) -> None:
         """
         Sets the simulator state to satisfy the predicate.
         """
-        return self._pddl_sim_state.set_state(sim_info)
+        return self._pddl_sim_state.set_state(sim_info, action=action)
 
     def clone(self):
         p = Predicate(self._name, self._pddl_sim_state.clone(), self._args)

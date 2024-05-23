@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import gym.spaces as spaces
 import torch
-
 from habitat.core.simulator import Observations
 from habitat.tasks.rearrange.rearrange_sensors import IsHoldingSensor
 from habitat_baselines.common.logging import baselines_logger
@@ -279,9 +278,7 @@ class SkillPolicy(Policy):
         Selects out the part of the observation that corresponds to the current goal of the skill.
         """
         for k in self._config.obs_skill_inputs:
-            cur_multi_sensor_index = self._get_multi_sensor_index(
-                cur_batch_idx
-            )
+            cur_multi_sensor_index = self._get_multi_sensor_index(cur_batch_idx)
             if k not in obs:
                 raise ValueError(
                     f"Skill {self._config.skill_name}: Could not find {k} out of {obs.keys()}"

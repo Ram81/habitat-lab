@@ -3,12 +3,12 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import habitat_sim
 import magnum as mn
 import numpy as np
 from gym import spaces
-
-import habitat_sim
 from habitat.articulated_agent_controllers import HumanoidRearrangeController
+from habitat.core.logging import logger
 from habitat.core.registry import registry
 from habitat.tasks.rearrange.actions.actions import (
     BaseVelAction,
@@ -127,6 +127,7 @@ class OracleNavAction(BaseVelAction, HumanoidJointAction):
             obj_pos = self._task.pddl_problem.sim_info.get_entity_pos(
                 nav_to_obj
             )
+
             start_pos, _, _ = place_agent_at_dist_from_pos(
                 np.array(obj_pos),
                 0.0,
@@ -168,15 +169,23 @@ class OracleNavAction(BaseVelAction, HumanoidJointAction):
         nav_to_target_idx = kwargs[
             self._action_arg_prefix + "oracle_nav_action"
         ]
+
         if nav_to_target_idx <= 0 or nav_to_target_idx > len(
             self._poss_entities
         ):
             return
-        nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+
+        if isinstance(nav_to_target_idx, np.ndarray) or isinstance(
+            nav_to_target_idx, list
+        ):
+            nav_to_target_idx = int(nav_to_target_idx[0]) - 1
+        else:
+            nav_to_target_idx = int(nav_to_target_idx) - 1
 
         final_nav_targ, obj_targ_pos = self._get_target_for_idx(
             nav_to_target_idx
         )
+
         base_T = self.cur_articulated_agent.base_transformation
         curr_path_points = self._path_to_point(final_nav_targ)
         robot_pos = np.array(self.cur_articulated_agent.base_pos)
@@ -249,9 +258,9 @@ class OracleNavAction(BaseVelAction, HumanoidJointAction):
                     self.skill_done = True
 
                 base_action = self.humanoid_controller.get_pose()
-                kwargs[
-                    f"{self._action_arg_prefix}human_joints_trans"
-                ] = base_action
+                kwargs[f"{self._action_arg_prefix}human_joints_trans"] = (
+                    base_action
+                )
 
                 HumanoidJointAction.step(self, *args, **kwargs)
                 return

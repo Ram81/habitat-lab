@@ -7,10 +7,8 @@ from typing import Dict, List, Optional, Set
 import attr
 import magnum as mn
 import numpy as np
-
-from habitat.articulated_agents.articulated_agent_base import (
-    ArticulatedAgentBase,
-)
+from habitat.articulated_agents.articulated_agent_base import \
+    ArticulatedAgentBase
 from habitat.articulated_agents.manipulator import Manipulator
 from habitat_sim.simulator import Simulator
 
@@ -30,6 +28,7 @@ class ArticulatedAgentCameraParams:
     cam_look_at_pos: mn.Vector3 = mn.Vector3.zero_init()
     cam_orientation: mn.Vector3 = mn.Vector3.zero_init()
     relative_transform: mn.Matrix4 = mn.Matrix4.identity_init()
+    look_at_changed: bool = False
 
 
 # TODO: refactor this class to support spherical joints: multiple dofs per link and #dofs != #positions

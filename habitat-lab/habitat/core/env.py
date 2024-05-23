@@ -22,7 +22,6 @@ import gym
 import numba
 import numpy as np
 from gym import spaces
-
 from habitat.config import read_write
 from habitat.core.dataset import BaseEpisode, Dataset, Episode, EpisodeIterator
 from habitat.core.embodied_task import EmbodiedTask, Metrics
@@ -128,9 +127,7 @@ class Env:
             }
         )
         self.action_space = self._task.action_space
-        self._max_episode_seconds = (
-            self._config.environment.max_episode_seconds
-        )
+        self._max_episode_seconds = self._config.environment.max_episode_seconds
         self._max_episode_steps = self._config.environment.max_episode_steps
         self._elapsed_steps = 0
         self._episode_start_time: Optional[float] = None
@@ -174,9 +171,7 @@ class Env:
     @property
     def episodes(self) -> List[Episode]:
         return (
-            self._dataset.episodes
-            if self._dataset
-            else cast(List[Episode], [])
+            self._dataset.episodes if self._dataset else cast(List[Episode], [])
         )
 
     @episodes.setter

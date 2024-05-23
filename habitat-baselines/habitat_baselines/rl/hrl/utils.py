@@ -15,6 +15,7 @@ def find_action_range(
     Returns the start and end indices of an action key in the action tensor. If
     the key is not found, a Value error will be thrown.
     """
+    print("action_space", action_space)
 
     start_idx = 0
     found = False

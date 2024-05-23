@@ -7,10 +7,10 @@
 from dataclasses import dataclass, replace
 from typing import Any, Dict, Optional, cast
 
+import habitat_sim
 import magnum as mn
 import numpy as np
-
-import habitat_sim
+from habitat.core.logging import logger
 from habitat.sims.habitat_simulator.sim_utilities import get_ao_global_bb
 from habitat.tasks.rearrange.marker_info import MarkerInfo
 from habitat.tasks.rearrange.multi_task.rearrange_pddl import (
@@ -171,7 +171,10 @@ class PddlRobotState:
         return True
 
     def set_state(
-        self, sim_info: PddlSimInfo, robot_entity: PddlEntity
+        self,
+        sim_info: PddlSimInfo,
+        robot_entity: PddlEntity,
+        action: str = None,
     ) -> None:
         """
         Sets the robot state in the simulator.
@@ -182,9 +185,12 @@ class PddlRobotState:
         )
         sim = sim_info.sim
         agent_data = sim.get_agent_data(robot_id)
+
+        # logger.info("Change state using pddl_apply")
         # Set the snapped object information
         if self.should_drop and agent_data.grasp_mgr.is_grasped:
             agent_data.grasp_mgr.desnap(True)
+            # logger.info("Desnap objects")
         elif self.holding is not None:
             # Swap objects to the desired object.
             obj_idx = cast(int, sim_info.search_for_entity(self.holding))
@@ -192,17 +198,17 @@ class PddlRobotState:
             sim.internal_step(-1)
             agent_data.grasp_mgr.snap_to_obj(sim.scene_obj_ids[obj_idx])
             sim.internal_step(-1)
+            # logger.info("Swap objects")
 
         # Set the robot starting position
         if isinstance(self.pos, PddlEntity):
             targ_pos = sim_info.get_entity_pos(self.pos)
 
             # Place some distance away from the object.
+            pre_pose = np.array(agent_data.articulated_agent.base_pos)
             start_pos, start_rot, was_fail = place_agent_at_dist_from_pos(
                 target_position=targ_pos,
-                rotation_perturbation_noise=self.get_base_angle_noise(
-                    sim_info
-                ),
+                rotation_perturbation_noise=self.get_base_angle_noise(sim_info),
                 distance_threshold=self.get_place_at_pos_dist(sim_info),
                 sim=sim,
                 num_spawn_attempts=sim_info.num_spawn_attempts,
@@ -213,8 +219,17 @@ class PddlRobotState:
             )
             agent_data.articulated_agent.base_pos = start_pos
             agent_data.articulated_agent.base_rot = start_rot
+            # logger.info("PLacing agent somwereh")
             if was_fail:
-                rearrange_logger.error("Failed to place the robot.")
+                rearrange_logger.error(
+                    "Failed to place the robot. {} - {} Action executed: {}, Pre and Post Sampled pose: {} - {}".format(
+                        sim_info.episode.scene_id,
+                        sim_info.episode.episode_id,
+                        action,
+                        pre_pose,
+                        start_pos,
+                    )
+                )
 
             # We teleported the agent. We also need to teleport the object the agent was holding.
             agent_data.grasp_mgr.update_object_to_grasp()
@@ -354,7 +369,7 @@ class PddlSimState:
             for robot_entity, robot_state in self._robot_states.items()
         )
 
-    def set_state(self, sim_info: PddlSimInfo) -> None:
+    def set_state(self, sim_info: PddlSimInfo, action: str = None) -> None:
         """
         Set this state in the simulator. Warning, this steps the simulator.
         """
@@ -412,7 +427,7 @@ class PddlSimState:
 
         # Set all desired robot states.
         for robot_entity, robot_state in self._robot_states.items():
-            robot_state.set_state(sim_info, robot_entity)
+            robot_state.set_state(sim_info, robot_entity, action=action)
 
 
 def _is_object_inside(
@@ -470,9 +485,7 @@ def _is_obj_state_true(entity, target, sim_info) -> bool:
     ):
         raise NotImplementedError()
     else:
-        raise ValueError(
-            f"Got unexpected combination of {entity} and {target}"
-        )
+        raise ValueError(f"Got unexpected combination of {entity} and {target}")
     return True
 
 
@@ -495,9 +508,7 @@ def _is_art_state_true(art_entity, set_art, sim_info) -> bool:
     return True
 
 
-def _place_obj_on_goal(
-    target: PddlEntity, sim_info: PddlSimInfo
-) -> mn.Matrix4:
+def _place_obj_on_goal(target: PddlEntity, sim_info: PddlSimInfo) -> mn.Matrix4:
     sim = sim_info.sim
     targ_idx = cast(
         int,

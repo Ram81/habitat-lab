@@ -5,6 +5,7 @@
 from enum import Enum
 from typing import Dict, List, Optional, Union
 
+from habitat.core.logging import logger
 from habitat.tasks.rearrange.multi_task.pddl_predicate import Predicate
 from habitat.tasks.rearrange.multi_task.rearrange_pddl import (
     PddlEntity,

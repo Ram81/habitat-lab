@@ -7,14 +7,11 @@
 from typing import Iterator, Optional
 
 import torch
-
 from habitat_baselines.common.baseline_registry import baseline_registry
 from habitat_baselines.common.rollout_storage import RolloutStorage
 from habitat_baselines.common.tensor_dict import DictTree, TensorDict
 from habitat_baselines.rl.models.rnn_state_encoder import (
-    build_pack_info_from_dones,
-    build_rnn_build_seq_info,
-)
+    build_pack_info_from_dones, build_rnn_build_seq_info)
 
 EPS_PPO = 1e-5
 
@@ -184,9 +181,9 @@ class HrlRolloutStorage(RolloutStorage):
         for inds in torch.randperm(num_environments).chunk(num_batches):
             batch = self.buffers[0 : self.num_steps, inds]
             batch["advantages"] = advantages[: self.num_steps, inds]
-            batch["recurrent_hidden_states"] = batch[
-                "recurrent_hidden_states"
-            ][0:1]
+            batch["recurrent_hidden_states"] = batch["recurrent_hidden_states"][
+                0:1
+            ]
             batch["loss_mask"] = (
                 torch.arange(self.num_steps, device=advantages.device)
                 .view(-1, 1, 1)

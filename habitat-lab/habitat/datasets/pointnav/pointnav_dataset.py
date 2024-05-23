@@ -157,6 +157,7 @@ class PointNavDatasetV1(Dataset):
         if CONTENT_SCENES_PATH_FIELD in deserialized:
             self.content_scenes_path = deserialized[CONTENT_SCENES_PATH_FIELD]
 
+        cnt = 0
         for episode in deserialized["episodes"]:
             episode = NavigationEpisode(**episode)
 

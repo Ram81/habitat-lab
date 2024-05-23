@@ -9,15 +9,10 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import magnum as mn
 import numpy as np
-
 from habitat.tasks.rearrange.utils import get_rigid_aabb
-from habitat_sim.physics import (
-    CollisionGroupHelper,
-    CollisionGroups,
-    ManagedRigidObject,
-    RigidConstraintSettings,
-    RigidConstraintType,
-)
+from habitat_sim.physics import (CollisionGroupHelper, CollisionGroups,
+                                 ManagedRigidObject, RigidConstraintSettings,
+                                 RigidConstraintType)
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig

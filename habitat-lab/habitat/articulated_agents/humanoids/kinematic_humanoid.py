@@ -3,18 +3,21 @@
 # LICENSE file in the root directory of this source tree.
 
 import pickle as pkl
+from collections import defaultdict
 from typing import List
 
+import habitat_sim
 import magnum as mn
 import numpy as np
-
-import habitat_sim
 from habitat.articulated_agents.mobile_manipulator import (
     ArticulatedAgentCameraParams,
     MobileManipulator,
     MobileManipulatorParams,
 )
-from habitat_sim.utils.common import orthonormalize_rotation_shear
+from habitat_sim.utils.common import (
+    orthonormalize_rotation_shear,
+    quat_to_magnum,
+)
 
 
 class KinematicHumanoid(MobileManipulator):
@@ -36,7 +39,7 @@ class KinematicHumanoid(MobileManipulator):
             ee_constraint=np.zeros((2, 2, 3)),
             cameras={
                 "head": ArticulatedAgentCameraParams(
-                    cam_offset_pos=mn.Vector3(0.0, 0.5, 0.25),
+                    cam_offset_pos=mn.Vector3(0.0, 0.5, 0.5),
                     cam_look_at_pos=mn.Vector3(0.0, 0.5, 0.75),
                     attached_link_id=-1,
                 ),
@@ -67,6 +70,7 @@ class KinematicHumanoid(MobileManipulator):
             fixed_base,
             maintain_link_order=True,
         )
+        self._camera_metadata = defaultdict(dict)
 
         # The offset and base transform are used so that the
         # character can have different rotations and shifts but the
@@ -174,6 +178,22 @@ class KinematicHumanoid(MobileManipulator):
                     sens_obj = self._sim._sensors[sensor_name]._sensor_object
                     cam_info = self.params.cameras[cam_prefix]
 
+                    orig_trans = sens_obj.node.translation
+
+                    add_offset = mn.Vector3(0, 0, 0)
+                    rot_delta = None
+                    if self._camera_metadata[sensor_name].get("look_at_offset"):
+                        add_offset = self._camera_metadata[sensor_name][
+                            "look_at_offset"
+                        ]
+                    if self._camera_metadata[sensor_name].get("rot_delta"):
+                        # rot_delta = quat_to_magnum(
+                        #     self._camera_metadata[sensor_name]["rot_delta"]
+                        # )
+                        rot_delta = self._camera_metadata[sensor_name][
+                            "rot_delta"
+                        ]
+
                     if cam_info.attached_link_id == -1:
                         link_trans = self.sim_obj.transformation
                     elif cam_info.attached_link_id == -2:
@@ -195,14 +215,17 @@ class KinematicHumanoid(MobileManipulator):
                     else:
                         cam_transform = mn.Matrix4.look_at(
                             cam_info.cam_offset_pos,
-                            cam_info.cam_look_at_pos,
+                            cam_info.cam_look_at_pos + add_offset,
                             mn.Vector3(0, 1, 0),
                         )
-                    cam_transform = (
-                        link_trans
-                        @ cam_transform
-                        @ cam_info.relative_transform
-                    )
+                    tfms = mn.Matrix4.translation(mn.Vector3(0, 0, 0))
+                    rel_transform = cam_info.relative_transform
+                    if rot_delta is not None:
+                        Mz = mn.Matrix4.rotation_z(mn.Rad(rot_delta[2]))
+                        My = mn.Matrix4.rotation_y(mn.Rad(rot_delta[1]))
+                        Mx = mn.Matrix4.rotation_x(mn.Rad(rot_delta[0]))
+                        rel_transform = tfms @ Mz @ Mx @ My @ rel_transform
+                    cam_transform = link_trans @ cam_transform @ rel_transform
                     cam_transform = inv_T @ cam_transform
 
                     sens_obj.node.transformation = (

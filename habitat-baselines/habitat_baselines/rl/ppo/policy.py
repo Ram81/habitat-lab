@@ -5,43 +5,27 @@
 # LICENSE file in the root directory of this source tree.
 import abc
 from dataclasses import dataclass
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import (TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Tuple,
+                    Union)
 
 import torch
 from gym import spaces
-from torch import nn as nn
-
-from habitat.tasks.nav.nav import (
-    ImageGoalSensor,
-    IntegratedPointGoalGPSAndCompassSensor,
-    PointGoalSensor,
-)
+from habitat.tasks.nav.nav import (ImageGoalSensor,
+                                   IntegratedPointGoalGPSAndCompassSensor,
+                                   PointGoalSensor)
 from habitat_baselines.common.baseline_registry import baseline_registry
-from habitat_baselines.rl.models.rnn_state_encoder import (
-    build_rnn_state_encoder,
-)
+from habitat_baselines.rl.models.rnn_state_encoder import \
+    build_rnn_state_encoder
 from habitat_baselines.rl.models.simple_cnn import SimpleCNN
-from habitat_baselines.utils.common import (
-    CategoricalNet,
-    GaussianNet,
-    get_num_actions,
-)
+from habitat_baselines.utils.common import (CategoricalNet, GaussianNet,
+                                            get_num_actions)
+from torch import nn as nn
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
-from torch import Tensor
-
 from habitat_baselines.utils.timing import g_timer
+from torch import Tensor
 
 
 @dataclass
@@ -143,6 +127,13 @@ class Policy(abc.ABC):
         """
         Gets the visual encoder for the policy. Only necessary to implement if
         you want to do RL with a frozen visual encoder.
+        """
+
+    @property
+    def critic(self) -> Optional[nn.Module]:
+        """
+        Gets the critic for the policy. Only necessary to implement if
+        you want to do RL.
         """
 
     def update_hidden_state(

@@ -6,6 +6,7 @@
 
 from typing import Dict, List, Optional
 
+from habitat.core.logging import logger
 from habitat.tasks.rearrange.multi_task.pddl_logical_expr import LogicalExpr
 from habitat.tasks.rearrange.multi_task.pddl_predicate import Predicate
 from habitat.tasks.rearrange.multi_task.rearrange_pddl import (
@@ -62,6 +63,7 @@ class PddlAction:
         entities for the post-condition based on the pre-condition quantifiers.
         """
         is_sat = self._pre_cond.is_true(sim_info)
+        # logger.info(f"Is pre truie {self._name} - {is_sat} {self._pre_cond}")
         if not is_sat:
             return False
         self.apply(sim_info)
@@ -80,12 +82,18 @@ class PddlAction:
         return None
 
     def __repr__(self):
-        return (
-            f"<Action {self._name} ({self._params})->({self._param_values})>"
-        )
+        return f"<Action {self._name} ({self._params})->({self._param_values})>"
 
     @property
     def compact_str(self) -> str:
+        """
+        Display string of the action.
+        """
+        params = ",".join([x.name for x in self._param_values])
+        return f"{self._name}({params})"
+
+    @property
+    def compact_str_natural_language(self) -> str:
         """
         Display string of the action.
         """
@@ -165,6 +173,7 @@ class PddlAction:
 
     def apply(self, sim_info: PddlSimInfo) -> None:
         post_conds = self._post_cond
+        # logger.info(f"Check {self._name} post condition {post_conds}")
         if self._post_cond_search is not None:
             found_assign = None
             assert len(self._pre_cond.prev_truth_vals) == len(
@@ -181,7 +190,8 @@ class PddlAction:
             post_conds = [p.clone().sub_in(found_assign) for p in post_conds]
 
         for p in post_conds:
-            p.set_state(sim_info)
+            # logger.info(f"Applying {self._name} post condition")
+            p.set_state(sim_info, action=(self._name, self._param_values))
 
     @property
     def params(self) -> List[PddlEntity]:

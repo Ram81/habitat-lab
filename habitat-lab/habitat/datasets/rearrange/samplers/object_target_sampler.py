@@ -46,7 +46,12 @@ class ObjectTargetSampler(ObjectSampler):
         goal_receptacles=None,
         object_to_containing_receptacle=None,
     ) -> Optional[
-        Dict[str, Tuple[habitat_sim.physics.ManagedRigidObject, Receptacle]]
+        Dict[
+            str,
+            Tuple[
+                habitat_sim.physics.ManagedRigidObject, Receptacle, Receptacle
+            ],
+        ]
     ]:
         """
         Overridden sampler maps to instances without replacement.
@@ -85,6 +90,7 @@ class ObjectTargetSampler(ObjectSampler):
             new_target_objects[use_target.handle] = (
                 new_object,
                 use_recep,
+                receptacle,
             )
 
         # Did we successfully place all the objects?

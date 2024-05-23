@@ -4,7 +4,7 @@
 
 import numpy as np
 from gym import spaces
-
+from habitat.core.logging import logger
 from habitat.core.registry import registry
 from habitat.tasks.rearrange.actions.grip_actions import ArticulatedAgentAction
 
@@ -24,9 +24,7 @@ class PddlApplyAction(ArticulatedAgentAction):
 
     @property
     def action_space(self):
-        action_n_args = sum(
-            [action.n_args for action in self._action_ordering]
-        )
+        action_n_args = sum([action.n_args for action in self._action_ordering])
 
         return spaces.Dict(
             {
@@ -74,6 +72,9 @@ class PddlApplyAction(ArticulatedAgentAction):
                 apply_action = self._task.pddl_problem.actions[
                     action.name
                 ].clone()
+                # logger.info(
+                #     f"Applying pddl action: {action.name} {param_values}"
+                # )
                 apply_action.set_param_values(param_values)
                 self._prev_action = apply_action
 

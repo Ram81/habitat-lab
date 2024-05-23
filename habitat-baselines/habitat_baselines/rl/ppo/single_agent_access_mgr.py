@@ -4,26 +4,21 @@ import gym.spaces as spaces
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.optim.lr_scheduler import LambdaLR
-
 from habitat import logger
 from habitat_baselines.common.baseline_registry import baseline_registry
 from habitat_baselines.common.env_spec import EnvironmentSpec
-from habitat_baselines.common.rollout_storage import (  # noqa: F401.
-    RolloutStorage,
-)
+from habitat_baselines.common.rollout_storage import \
+    RolloutStorage  # noqa: F401.
 from habitat_baselines.common.storage import Storage
 from habitat_baselines.rl.ddppo.policy import (  # noqa: F401.
-    PointNavResNetNet,
-    PointNavResNetPolicy,
-)
-from habitat_baselines.rl.hrl.hierarchical_policy import (  # noqa: F401.
-    HierarchicalPolicy,
-)
+    PointNavResNetNet, PointNavResNetPolicy)
+from habitat_baselines.rl.hrl.hierarchical_policy import \
+    HierarchicalPolicy  # noqa: F401.
 from habitat_baselines.rl.ppo.agent_access_mgr import AgentAccessMgr
 from habitat_baselines.rl.ppo.policy import NetPolicy
 from habitat_baselines.rl.ppo.ppo import PPO
 from habitat_baselines.rl.ppo.updater import Updater
+from torch.optim.lr_scheduler import LambdaLR
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -171,6 +166,16 @@ class SingleAgentAccessMgr(AgentAccessMgr):
                 sum(param.numel() for param in updater.parameters())
             )
         )
+
+        logger.info(
+            "Agent number of trainable parameters: {}".format(
+                sum(
+                    param.numel()
+                    for param in updater.parameters()
+                    if param.requires_grad
+                )
+            )
+        )
         return updater
 
     def init_distributed(self, find_unused_params: bool = True) -> None:
@@ -279,10 +284,7 @@ class SingleAgentAccessMgr(AgentAccessMgr):
                 self._lr_scheduler.load_state_dict(state["lr_sched_state"])
 
     def after_update(self):
-        if (
-            self._ppo_cfg.use_linear_lr_decay
-            and self._lr_scheduler is not None
-        ):
+        if self._ppo_cfg.use_linear_lr_decay and self._lr_scheduler is not None:
             self._lr_scheduler.step()  # type: ignore
         self._updater.after_update()
 

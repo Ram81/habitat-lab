@@ -11,12 +11,10 @@ import time
 from collections import defaultdict, deque
 from typing import TYPE_CHECKING, Dict, List, Optional, Set
 
+import habitat_baselines.rl.multi_agent  # noqa: F401.
 import hydra
 import numpy as np
 import torch
-from omegaconf import OmegaConf
-
-import habitat_baselines.rl.multi_agent  # noqa: F401.
 from habitat import VectorEnv, logger
 from habitat.config import read_write
 from habitat.config.default import get_agent_config
@@ -45,6 +43,7 @@ from habitat_baselines.rl.ddppo.ddp_utils import (
     requeue_job,
     save_resume_state,
 )
+from omegaconf import OmegaConf
 
 if TYPE_CHECKING:
     from omegaconf import DictConfig
@@ -52,9 +51,9 @@ if TYPE_CHECKING:
 from habitat_baselines.rl.ddppo.policy import PointNavResNetNet
 from habitat_baselines.rl.ppo.agent_access_mgr import AgentAccessMgr
 from habitat_baselines.rl.ppo.evaluator import Evaluator
-from habitat_baselines.rl.ppo.single_agent_access_mgr import (  # noqa: F401.
+from habitat_baselines.rl.ppo.single_agent_access_mgr import (
     SingleAgentAccessMgr,
-)
+)  # noqa: F401.
 from habitat_baselines.utils.common import (
     batch_obs,
     inference_mode,
@@ -73,6 +72,7 @@ class PPOTrainer(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
+
     supported_tasks = ["Nav-v0"]
 
     SHORT_ROLLOUT_THRESHOLD: float = 0.25
@@ -255,7 +255,7 @@ class PPOTrainer(BaseRLTrainer):
 
         self._agent = self._create_agent(resume_state)
         if self._is_distributed:
-            self._agent.init_distributed(find_unused_params=False)  # type: ignore
+            self._agent.init_distributed(find_unused_params=True)  # type: ignore
         self._agent.post_init()
 
         self._is_static_encoder = (
@@ -274,9 +274,9 @@ class PPOTrainer(BaseRLTrainer):
                 self._encoder is not None
             ), "Visual encoder is not specified for this actor"
             with inference_mode():
-                batch[
-                    PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-                ] = self._encoder(batch)
+                batch[PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY] = (
+                    self._encoder(batch)
+                )
 
         self._agent.rollouts.insert_first_observations(batch)
 
@@ -357,9 +357,7 @@ class PPOTrainer(BaseRLTrainer):
 
             # Obtain lenghts
             step_batch_lens = {
-                k: v
-                for k, v in step_batch.items()
-                if k.startswith("index_len")
+                k: v for k, v in step_batch.items() if k.startswith("index_len")
             }
             action_data = self._agent.actor_critic.act(
                 step_batch["observations"],
@@ -368,6 +366,9 @@ class PPOTrainer(BaseRLTrainer):
                 step_batch["masks"],
                 **step_batch_lens,
             )
+        # logger.info(
+        #     f"Action data: {action_data.actions} {step_batch['observations']['teacher_label']}"
+        # )
 
         profiling_wrapper.range_pop()  # compute actions
 
@@ -460,15 +461,13 @@ class PPOTrainer(BaseRLTrainer):
                     )
                 self.running_episode_stats[k][env_slice] += v.where(done_masks, v.new_zeros(()))  # type: ignore
 
-            self.current_episode_reward[env_slice].masked_fill_(
-                done_masks, 0.0
-            )
+            self.current_episode_reward[env_slice].masked_fill_(done_masks, 0.0)
 
         if self._is_static_encoder:
             with inference_mode(), g_timer.avg_time("trainer.visual_features"):
-                batch[
-                    PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-                ] = self._encoder(batch)
+                batch[PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY] = (
+                    self._encoder(batch)
+                )
 
         self._agent.rollouts.insert(
             next_observations=batch,
@@ -492,9 +491,7 @@ class PPOTrainer(BaseRLTrainer):
         with inference_mode():
             step_batch = self._agent.rollouts.get_last_step()
             step_batch_lens = {
-                k: v
-                for k, v in step_batch.items()
-                if k.startswith("index_len")
+                k: v for k, v in step_batch.items() if k.startswith("index_len")
             }
 
             next_value = self._agent.actor_critic.get_value(
@@ -562,9 +559,7 @@ class PPOTrainer(BaseRLTrainer):
     ):
         deltas = {
             k: (
-                (v[-1] - v[0]).sum().item()
-                if len(v) > 1
-                else v[0].sum().item()
+                (v[-1] - v[0]).sum().item() if len(v) > 1 else v[0].sum().item()
             )
             for k, v in self.window_episode_stats.items()
         }
@@ -740,6 +735,8 @@ class PPOTrainer(BaseRLTrainer):
 
                 profiling_wrapper.range_push("_collect_rollout_step")
                 with g_timer.avg_time("trainer.rollout_collect"):
+
+                    # logger.info(f"\n[PPO pre Step 0] Action\n")
                     for buffer_index in range(self._agent.nbuffers):
                         self._compute_actions_and_step_envs(buffer_index)
 
@@ -748,6 +745,7 @@ class PPOTrainer(BaseRLTrainer):
                             self.should_end_early(step + 1)
                             or (step + 1) == self._ppo_cfg.num_steps
                         )
+                        # logger.info(f"\n[PPO Step {step}] Action\n")
 
                         for buffer_index in range(self._agent.nbuffers):
                             count_steps_delta += (
@@ -763,6 +761,9 @@ class PPOTrainer(BaseRLTrainer):
                                         "_collect_rollout_step"
                                     )
 
+                                # logger.info(
+                                #     f"\n[PPO pre Step {step + 1}] Action\n"
+                                # )
                                 self._compute_actions_and_step_envs(
                                     buffer_index
                                 )
@@ -838,7 +839,17 @@ class PPOTrainer(BaseRLTrainer):
             ckpt_dict["config"]
         )
         with read_write(config):
+            config.habitat_baselines.num_environments = (
+                self.config.habitat_baselines.num_environments
+            )
             config.habitat.dataset.split = config.habitat_baselines.eval.split
+            config.habitat.dataset.data_path = (
+                self.config.habitat.dataset.data_path
+            )
+            config.habitat.task.actions = self.config.habitat.task.actions
+            config.habitat.task.lab_sensors = (
+                self.config.habitat.task.lab_sensors
+            )
 
         if len(self.config.habitat_baselines.eval.video_option) > 0:
             n_agents = len(config.habitat.simulator.agents)

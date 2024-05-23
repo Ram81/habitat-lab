@@ -13,11 +13,10 @@ from functools import wraps
 from typing import List, Optional, Tuple
 
 import attr
+import habitat_sim
 import magnum as mn
 import numpy as np
 import quaternion
-
-import habitat_sim
 from habitat.articulated_agents.mobile_manipulator import MobileManipulator
 from habitat.articulated_agents.robots.spot_robot import SpotRobot
 from habitat.articulated_agents.robots.stretch_robot import StretchRobot
@@ -74,9 +73,7 @@ class CollisionDetails:
     @property
     def total_collisions(self):
         return (
-            self.obj_scene_colls
-            + self.robot_obj_colls
-            + self.robot_scene_colls
+            self.obj_scene_colls + self.robot_obj_colls + self.robot_scene_colls
         )
 
     def __add__(self, other):

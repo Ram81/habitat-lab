@@ -8,24 +8,13 @@ import os
 import os.path as osp
 import time
 from collections import defaultdict
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import (TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple,
+                    Union, cast)
 
+import habitat_sim
 import magnum as mn
 import numpy as np
 import numpy.typing as npt
-
-import habitat_sim
-
 # flake8: noqa
 from habitat.articulated_agents.robots import FetchRobot, FetchRobotNoWheels
 from habitat.config import read_write
@@ -33,26 +22,18 @@ from habitat.core.registry import registry
 from habitat.core.simulator import AgentState, Observations
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode
-from habitat.datasets.rearrange.samplers.receptacle import (
-    AABBReceptacle,
-    find_receptacles,
-)
+from habitat.datasets.rearrange.samplers.receptacle import (AABBReceptacle,
+                                                            find_receptacles)
 from habitat.sims.habitat_simulator.habitat_simulator import HabitatSim
 from habitat.tasks.rearrange.articulated_agent_manager import (
-    ArticulatedAgentData,
-    ArticulatedAgentManager,
-)
+    ArticulatedAgentData, ArticulatedAgentManager)
 from habitat.tasks.rearrange.marker_info import MarkerInfo
-from habitat.tasks.rearrange.rearrange_grasp_manager import (
-    RearrangeGraspManager,
-)
-from habitat.tasks.rearrange.utils import (
-    add_perf_timing_func,
-    get_rigid_aabb,
-    make_render_only,
-    rearrange_collision,
-    rearrange_logger,
-)
+from habitat.tasks.rearrange.rearrange_grasp_manager import \
+    RearrangeGraspManager
+from habitat.tasks.rearrange.utils import (add_perf_timing_func,
+                                           get_rigid_aabb, make_render_only,
+                                           rearrange_collision,
+                                           rearrange_logger)
 from habitat_sim.logging import logger
 from habitat_sim.nav import NavMeshSettings
 from habitat_sim.physics import CollisionGroups, JointMotorSettings, MotionType
@@ -413,6 +394,7 @@ class RearrangeSim(HabitatSim):
         :returns: The set base position and rotation
         """
         articulated_agent = self.get_agent_data(agent_idx).articulated_agent
+        # print("[Try] Sample agent start")
 
         for attempt_i in range(max_attempts):
             start_pos = self.pathfinder.get_random_navigable_point(
@@ -439,6 +421,7 @@ class RearrangeSim(HabitatSim):
             rearrange_logger.warning(
                 f"Could not find a collision free start for {self.ep_info.episode_id}"
             )
+        # print("[Completed] Sample agent start")
         return start_pos, start_rot
 
     def _setup_targets(self, ep_info):
@@ -455,7 +438,7 @@ class RearrangeSim(HabitatSim):
 
         navmesh_path = osp.join(base_dir, "navmeshes", scene_name + ".navmesh")
 
-        if osp.exists(navmesh_path):
+        if osp.exists(navmesh_path) and False:
             self.pathfinder.load_nav_mesh(navmesh_path)
             logger.info(f"Loaded navmesh from {navmesh_path}")
         else:
@@ -478,8 +461,8 @@ class RearrangeSim(HabitatSim):
             navmesh_settings.agent_max_slope = agent_config.max_slope
             navmesh_settings.include_static_objects = True
             self.recompute_navmesh(self.pathfinder, navmesh_settings)
-            os.makedirs(osp.dirname(navmesh_path), exist_ok=True)
-            self.pathfinder.save_nav_mesh(navmesh_path)
+            # os.makedirs(osp.dirname(navmesh_path), exist_ok=True)
+            # self.pathfinder.save_nav_mesh(navmesh_path)
 
         # NOTE: allowing indoor islands only
         self._largest_indoor_island_idx = get_largest_island_index(
@@ -494,9 +477,7 @@ class RearrangeSim(HabitatSim):
         return self._largest_indoor_island_idx
 
     @add_perf_timing_func()
-    def _clear_objects(
-        self, should_add_objects: bool, new_scene: bool
-    ) -> None:
+    def _clear_objects(self, should_add_objects: bool, new_scene: bool) -> None:
         rom = self.get_rigid_object_manager()
 
         # Clear all the rigid objects.
@@ -879,6 +860,8 @@ class RearrangeSim(HabitatSim):
                 add_back_viz_objs[name] = (before_pos, r)
             self.viz_ids = defaultdict(lambda: None)
 
+        # print(action, "will update", (action != "lookup_art"))
+        # if action != "lookup_art":
         self.maybe_update_articulated_agent()
 
         if self._batch_render:
@@ -963,9 +946,7 @@ class RearrangeSim(HabitatSim):
                 self._viz_templates[str(r)] = template_mgr.register_template(
                     template, "ball_new_viz_" + str(r)
                 )
-            viz_obj = rom.add_object_by_template_id(
-                self._viz_templates[str(r)]
-            )
+            viz_obj = rom.add_object_by_template_id(self._viz_templates[str(r)])
             make_render_only(viz_obj, self)
             self._viz_handle_to_template[viz_obj.object_id] = r
         else:
@@ -1001,9 +982,7 @@ class RearrangeSim(HabitatSim):
             return np.array([]), np.array([])
         targ_idx, targ_trans = list(zip(*self._get_target_trans()))
 
-        a, b = np.array(targ_idx), [
-            np.array(x.translation) for x in targ_trans
-        ]
+        a, b = np.array(targ_idx), [np.array(x.translation) for x in targ_trans]
         return a, np.array(b)
 
     def get_n_targets(self) -> int:

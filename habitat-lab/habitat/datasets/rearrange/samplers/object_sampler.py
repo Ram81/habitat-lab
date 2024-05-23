@@ -10,14 +10,16 @@ import time
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
-import magnum as mn
-
 import habitat.sims.habitat_simulator.sim_utilities as sutils
 import habitat_sim
+import magnum as mn
 from habitat.core.logging import logger
 from habitat.datasets.rearrange.navmesh_utils import (
     get_largest_island_index,
     is_accessible,
+)
+from habitat.datasets.rearrange.samplers.metadata_interface import (
+    MetadataInterface,
 )
 from habitat.datasets.rearrange.samplers.receptacle import (
     OnTopOfReceptacle,
@@ -44,6 +46,7 @@ class ObjectSampler:
         recep_set_sample_probs: Optional[Dict[str, float]] = None,
         translation_up_offset: float = 0.08,
         constrain_to_largest_nav_island: bool = False,
+        fixed_object_handles: Optional[List[str]] = None,
     ) -> None:
         """
         :param object_set: The set objects from which placements will be sampled.
@@ -62,12 +65,12 @@ class ObjectSampler:
         self._translation_up_offset = translation_up_offset
         self._constrain_to_largest_nav_island = constrain_to_largest_nav_island
 
-        self.receptacle_instances: Optional[
-            List[Receptacle]
-        ] = None  # all receptacles in the scene
-        self.receptacle_candidates: Optional[
-            List[Receptacle]
-        ] = None  # the specific receptacle instances relevant to this sampler
+        self.receptacle_instances: Optional[List[Receptacle]] = (
+            None  # all receptacles in the scene
+        )
+        self.receptacle_candidates: Optional[List[Receptacle]] = (
+            None  # the specific receptacle instances relevant to this sampler
+        )
         self.max_sample_attempts = 100  # number of distinct object|receptacle pairings to try before giving up
         self.max_placement_attempts = 50  # number of times to attempt a single object|receptacle placement pairing
         self.num_objects = num_objects  # tuple of [min,max] objects to sample
@@ -84,6 +87,8 @@ class ObjectSampler:
         # - surface vs volume
         # - apply physics stabilization: none, dynamic, projection
         self.largest_island_id = -1
+        self.fixed_object_handles = fixed_object_handles
+        self.metadata_interface = MetadataInterface()
 
     def reset(self) -> None:
         """
@@ -169,6 +174,15 @@ class ObjectSampler:
                                 found_match = True
                                 break
                         break
+
+                    obj_hash = sutils.object_shortname_from_handle(
+                        receptacle.parent_object_handle
+                    )
+                    if (
+                        self.metadata_interface.get_object_category(obj_hash)
+                        is None
+                    ):
+                        continue
 
                     # then search for inclusion
                     for (
@@ -320,7 +334,7 @@ class ObjectSampler:
                     sim,
                     new_object,
                     support_object_ids,
-                    vdb=vdb,
+                    dbv=vdb,
                 )
                 if snap_success:
                     logger.info(

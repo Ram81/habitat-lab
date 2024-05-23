@@ -20,9 +20,9 @@ from typing import (
 )
 
 import yaml  # type: ignore[import]
-
 from habitat.config.default import get_full_habitat_config_path
 from habitat.core.dataset import Episode
+from habitat.core.logging import logger
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeDatasetV0
 from habitat.tasks.rearrange.multi_task.pddl_action import PddlAction
 from habitat.tasks.rearrange.multi_task.pddl_logical_expr import (
@@ -77,9 +77,7 @@ class PddlDomain:
             self._art_succ_thresh = self._config.art_succ_thresh
             self._robot_at_thresh = self._config.robot_at_thresh
             self._num_spawn_attempts = self._config.num_spawn_attempts
-            self._filter_colliding_states = (
-                self._config.filter_colliding_states
-            )
+            self._filter_colliding_states = self._config.filter_colliding_states
             self._recep_place_shrink_factor = (
                 self._config.recep_place_shrink_factor
             )
@@ -364,8 +362,7 @@ class PddlDomain:
             expr_types=self.expr_types,
             obj_ids=sim.handle_to_object_id,
             target_ids={
-                f"TARGET_{id_to_name[idx]}": idx
-                for idx in sim.get_targets()[0]
+                f"TARGET_{id_to_name[idx]}": idx for idx in sim.get_targets()[0]
             },
             art_handles={k.handle: i for i, k in enumerate(sim.art_objs)},
             marker_handles=sim.get_all_markers(),
@@ -423,7 +420,6 @@ class PddlDomain:
         """
         Helper to check expression truth value from simulator info.
         """
-
         return expr.is_true(self.sim_info)
 
     def get_true_predicates(self) -> List[Predicate]:
@@ -582,9 +578,11 @@ class PddlDomain:
         """
 
         expr.sub_exprs = [
-            self.expand_quantifiers(subexpr)[0]
-            if isinstance(subexpr, LogicalExpr)
-            else subexpr
+            (
+                self.expand_quantifiers(subexpr)[0]
+                if isinstance(subexpr, LogicalExpr)
+                else subexpr
+            )
             for subexpr in expr.sub_exprs
         ]
 
@@ -631,6 +629,7 @@ class PddlProblem(PddlDomain):
     stage_goals: Dict[str, LogicalExpr]
     init: List[Predicate]
     goal: LogicalExpr
+    problem_def: Dict[str, Any]
 
     def __init__(
         self,
@@ -648,6 +647,7 @@ class PddlProblem(PddlDomain):
             o["name"]: PddlEntity(o["name"], self.expr_types[o["expr_type"]])
             for o in problem_def["objects"]
         }
+        self.problem_def = problem_def
 
         self.init = [
             self.parse_predicate(p, self._objects)
