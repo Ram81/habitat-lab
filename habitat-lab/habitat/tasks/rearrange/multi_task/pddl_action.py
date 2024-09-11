@@ -6,6 +6,7 @@
 
 from typing import Dict, List, Optional
 
+from habitat.core.logging import logger
 from habitat.tasks.rearrange.multi_task.pddl_logical_expr import LogicalExpr
 from habitat.tasks.rearrange.multi_task.pddl_predicate import Predicate
 from habitat.tasks.rearrange.multi_task.rearrange_pddl import (

@@ -314,15 +314,22 @@ class InferenceWorkerProcess(ProcessBase):
             ]
             prev_actions = self.rollouts.next_prev_actions[environment_ids]
             if self._static_encoder:
-                obs[
-                    PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-                ] = self.visual_encoder(obs)
+                obs[PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY] = (
+                    self.visual_encoder(obs)
+                )
 
             action_data = self.actor_critic.act(
                 obs,
                 recurrent_hidden_states,
                 prev_actions,
                 to_batch["masks"],
+            )
+
+            print(
+                f"Rollout hidden states: {self.rollouts.next_hidden_states.shape} -- {action_data.rnn_hidden_states.shape} - {environment_ids} - {action_data.actions.shape}"
+            )
+            print(
+                f"After act: {self.rollouts.next_prev_actions.shape} - {action_data.env_actions.shape}"
             )
 
             if not final_batch:
@@ -348,6 +355,9 @@ class InferenceWorkerProcess(ProcessBase):
             self.transfer_buffers["actions"][
                 self.new_reqs
             ] = cpu_actions.numpy()
+
+            for k, v in self.transfer_buffers.items():
+                print(f"Transfor buffer: {k} - {v.shape}")
 
             self._sync_device()
 

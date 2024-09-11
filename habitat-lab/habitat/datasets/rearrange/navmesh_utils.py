@@ -184,6 +184,7 @@ def embodied_unoccluded_navmesh_snap(
     pathfinder: habitat_sim.nav.PathFinder = None,
     target_object_ids: Optional[List[int]] = None,
     ignore_object_ids: Optional[List[int]] = None,
+    ignore_object_collision_ids: Optional[List[int]] = None,
     island_id: int = -1,
     search_offset: float = 1.5,
     test_batch_size: int = 20,
@@ -235,13 +236,15 @@ def embodied_unoccluded_navmesh_snap(
     if embodiment_heuristic_offsets is None and agent_embodiment is not None:
         embodiment_heuristic_offsets = agent_embodiment.params.navmesh_offsets
 
-    # first try the closest snap point
+    # set the search radius
+    search_radius = search_offset
+    # try the closest snap point to find expected distance
     snap_point = pathfinder.snap_point(target_position, island_id)
-
-    # distance to closest snap point is the absolute minimum
-    min_radius = (snap_point - target_position).length()
-    # expand the search radius
-    search_radius = min_radius + search_offset
+    if not np.any(np.isnan(snap_point)):
+        # distance to closest snap point is the absolute minimum radius
+        min_radius = (snap_point - target_position).length()
+        # expand the search radius
+        search_radius = min_radius + search_offset
 
     # gather a test batch
     test_batch: List[Tuple[mn.Vector3, float]] = []
@@ -252,15 +255,17 @@ def embodied_unoccluded_navmesh_snap(
             radius=search_radius,
             island_index=island_id,
         )
-        reject = False
-        for batch_sample in test_batch:
-            if np.linalg.norm(sample - batch_sample[0]) < min_sample_dist:
-                reject = True
-                break
-        if not reject:
-            test_batch.append(
-                (sample, float(np.linalg.norm(sample - target_position)))
-            )
+        # validate the sample before caching
+        if not np.any(np.isnan(sample)):
+            reject = False
+            for batch_sample in test_batch:
+                if np.linalg.norm(sample - batch_sample[0]) < min_sample_dist:
+                    reject = True
+                    break
+            if not reject:
+                test_batch.append(
+                    (sample, float(np.linalg.norm(sample - target_position)))
+                )
         sample_count += 1
 
     # sort the test batch points by distance to the target
@@ -296,7 +301,6 @@ def embodied_unoccluded_navmesh_snap(
                 ]
             # last one is always no-noise to check forward-facing
             orientation_noise_samples.append(0)
-
             for orientation_noise_sample in orientation_noise_samples:
                 desired_angle = facing_target_angle + orientation_noise_sample
                 if embodiment_heuristic_offsets is not None:
@@ -356,11 +360,14 @@ def embodied_unoccluded_navmesh_snap(
                         _, details = rearrange_collision(
                             sim,
                             False,
+                            ignore_object_ids=ignore_object_collision_ids,
                             ignore_base=False,
                         )
                     else:
                         _, details = general_sim_collision(
-                            sim, agent_embodiment
+                            sim,
+                            agent_embodiment,
+                            ignore_object_ids=ignore_object_collision_ids,
                         )
 
                     # reset agent state

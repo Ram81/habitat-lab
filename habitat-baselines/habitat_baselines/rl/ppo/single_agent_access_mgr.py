@@ -207,6 +207,10 @@ class SingleAgentAccessMgr(AgentAccessMgr):
                 map_location="cpu",
             )
 
+        # import pdb
+
+        # pdb.set_trace()
+
         if self._config.habitat_baselines.rl.ddppo.pretrained:
             actor_critic.load_state_dict(
                 {  # type: ignore
@@ -228,8 +232,8 @@ class SingleAgentAccessMgr(AgentAccessMgr):
                 param.requires_grad_(False)
 
         if self._config.habitat_baselines.rl.ddppo.reset_critic:
-            nn.init.orthogonal_(actor_critic.critic.fc.weight)
-            nn.init.constant_(actor_critic.critic.fc.bias, 0)
+            nn.init.orthogonal_(actor_critic._critic.fc.weight)
+            nn.init.constant_(actor_critic._critic.fc.bias, 0)
 
         actor_critic.to(self._device)
         return actor_critic

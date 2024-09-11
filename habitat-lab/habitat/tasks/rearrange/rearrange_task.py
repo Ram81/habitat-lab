@@ -83,15 +83,11 @@ class RearrangeTask(NavigationTask):
         self._cur_episode_step = 0
         self._should_place_articulated_agent = should_place_articulated_agent
         self._seed = self._sim.habitat_config.seed
-        self._min_distance_start_agents = (
-            self._config.min_distance_start_agents
-        )
+        self._min_distance_start_agents = self._config.min_distance_start_agents
         # TODO: this patch supports hab2 benchmark fixed states, but should be refactored w/ state caching for multi-agent
         if (
             hasattr(self._sim.habitat_config.agents, "main_agent")
-            and self._sim.habitat_config.agents[
-                "main_agent"
-            ].is_set_start_state
+            and self._sim.habitat_config.agents["main_agent"].is_set_start_state
         ):
             self._should_place_articulated_agent = False
 
@@ -284,9 +280,7 @@ class RearrangeTask(NavigationTask):
         idxs, goal_pos = self._sim.get_targets()
         scene_pos = self._sim.get_scene_pos()
         target_pos = scene_pos[idxs]
-        min_dist = np.min(
-            np.linalg.norm(target_pos - goal_pos, ord=2, axis=-1)
-        )
+        min_dist = np.min(np.linalg.norm(target_pos - goal_pos, ord=2, axis=-1))
         return (
             self._sim.grasp_mgr.is_grasped
             and action_args.get("grip_action", None) is not None
@@ -296,9 +290,7 @@ class RearrangeTask(NavigationTask):
 
     def step(self, action: Dict[str, Any], episode: Episode):
         action_args = action["action_args"]
-        if self._enable_safe_drop and self._is_violating_safe_drop(
-            action_args
-        ):
+        if self._enable_safe_drop and self._is_violating_safe_drop(action_args):
             action_args["grip_action"] = None
         obs = super().step(action=action, episode=episode)
 

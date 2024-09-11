@@ -255,9 +255,9 @@ class ObjectStateMachine:
         # a list of ObjectStateSpec singleton instances which are active in the current scene
         self.active_states = active_states if active_states is not None else []
         # map tracked objects to their set of state properies
-        self.objects_with_states: Dict[
-            str, List[ObjectStateSpec]
-        ] = defaultdict(lambda: [])
+        self.objects_with_states: Dict[str, List[ObjectStateSpec]] = (
+            defaultdict(lambda: [])
+        )
 
     def initialize_object_state_map(self, sim: habitat_sim.Simulator) -> None:
         """
@@ -284,7 +284,6 @@ class ObjectStateMachine:
         for state in self.active_states:
             if state.is_affordance_of_obj(obj):
                 self.objects_with_states[obj.handle].append(state)
-                print(f"registered state {state} for object {obj.handle}")
 
     def update_states(self, sim: habitat_sim.Simulator, dt: float) -> None:
         """

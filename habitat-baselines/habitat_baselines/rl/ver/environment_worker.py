@@ -21,6 +21,8 @@ from typing import (
 
 import attr
 import numpy as np
+import torch
+from transformers import LlamaTokenizer, PreTrainedTokenizer
 
 from habitat import RLEnv, logger, make_dataset
 from habitat.config import read_write
@@ -74,10 +76,14 @@ def infinite_shuffling_iterator(
 class DefaultActionPlugin:
     policy_action_space: Any
     is_continuous: bool
+    _tokenizer: PreTrainedTokenizer
 
     def __init__(self, policy_action_space: Any) -> None:
         self.policy_action_space = policy_action_space
         self.is_continuous = is_continuous_action_space(policy_action_space)
+        self._tokenizer = LlamaTokenizer.from_pretrained(
+            "data/models/llama-7b"
+        )
 
     def __call__(self, action: np.ndarray) -> np.ndarray:
         if self.is_continuous:
@@ -87,6 +93,21 @@ class DefaultActionPlugin:
                 self.policy_action_space.high,
             )
         else:
+            if isinstance(action, np.ndarray):
+                print("Action plugin", action, action.shape)
+                if len(action.shape) > 1:
+                    action_decoded = self._tokenizer.batch_decode(
+                        action, skip_special_tokens=True
+                    )
+                else:
+                    action_decoded = self._tokenizer.decode(
+                        action, skip_special_tokens=True
+                    )
+                print(f"Action decoded: {action_decoded}")
+                action_decoded = ["turn_left", "move_forward"]
+                return action_decoded[0]
+            elif isinstance(action, torch.Tensor):
+                return action.numpy()
             return action.item()
 
 
@@ -169,20 +190,24 @@ class EnvironmentWorkerProcess(ProcessBase):
         return obs, reward, done, info
 
     def step(self):
+        print(
+            f"Env process: {self.actions.shape} - {self.env_idx} - {self.actions[self.env_idx]}"
+        )
+
         with self.timer.avg_time("process actions"):
             action = self.action_plugin(self.actions[self.env_idx])
 
         self._last_obs, reward, done, info = self._step_env(action)
 
         with self.timer.avg_time("enqueue env"):
-            self.send_transfer_buffers[
-                self.env_idx
-            ] = dict(  # type:ignore[assignment]
-                observations=self._last_obs,
-                rewards=reward,
-                masks=not done,
-                episode_ids=self._episode_id,
-                step_ids=self._step_id,
+            self.send_transfer_buffers[self.env_idx] = (
+                dict(  # type:ignore[assignment]
+                    observations=self._last_obs,
+                    rewards=reward,
+                    masks=not done,
+                    episode_ids=self._episode_id,
+                    step_ids=self._step_id,
+                )
             )
 
         self.queues.inference.put(self.env_idx)

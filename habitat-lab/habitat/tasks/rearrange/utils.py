@@ -94,7 +94,9 @@ class CollisionDetails:
 
 
 def general_sim_collision(
-    sim: habitat_sim.Simulator, agent_embodiment: MobileManipulator
+    sim: habitat_sim.Simulator,
+    agent_embodiment: MobileManipulator,
+    ignore_object_ids: Optional[List[int]] = None,
 ) -> Tuple[bool, CollisionDetails]:
     """
     Proxy for "rearrange_collision()" which does not require a RearrangeSim.
@@ -109,7 +111,15 @@ def general_sim_collision(
 
     robot_scene_colls = 0
     for col in colls:
-        if coll_name_matches(col, agent_embodiment_object_id):
+        if coll_name_matches(col, agent_embodiment_object_id) and (
+            ignore_object_ids is None
+            or not any(
+                [
+                    coll_name_matches(col, ignore_object_id)
+                    for ignore_object_id in ignore_object_ids
+                ]
+            )
+        ):
             robot_scene_colls += 1
 
     return (robot_scene_colls > 0), CollisionDetails(

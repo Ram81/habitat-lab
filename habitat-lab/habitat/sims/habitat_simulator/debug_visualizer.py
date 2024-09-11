@@ -73,7 +73,7 @@ class DebugObservation:
 
         # filename format "prefixmonth_day_year_hourminutesecondmicrosecond.png"
         date_time = datetime.now().strftime("%m_%d_%Y_%H%M%S%f")
-        file_path = os.path.join(output_path, prefix + date_time + ".png")
+        file_path = os.path.join(output_path, prefix + ".png")
         self.image.save(file_path)
         return file_path
 
@@ -550,6 +550,7 @@ class DebugVisualizer:
         distance = (np.amax(np.array(bb_size)) * 1.1 / aspect) / math.tan(
             fov / (360 / math.pi)
         )
+        distance = 0.5
         if cam_local_pos is None:
             # default to -Z (forward) of the object
             cam_local_pos = mn.Vector3(0, 0, -1)

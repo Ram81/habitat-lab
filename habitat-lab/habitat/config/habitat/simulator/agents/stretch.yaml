@@ -15,7 +15,3 @@ sim_sensors:
     height: 640
     width: 480
     hfov: 43
-  head_panoptic_sensor:
-    height: 640
-    width: 480
-    hfov: 43

@@ -220,8 +220,39 @@ class PddlSimInfo:
         if self.check_type_matches(
             entity, SimulatorObjectType.STATIC_RECEPTACLE_ENTITY.value
         ):
-            recep = self.receptacles[ename]
-            return np.array(recep.get_global_transform(self.sim).translation)
+            if ename in self.receptacles:
+                recep = self.receptacles[ename]
+                return np.array(
+                    recep.get_global_transform(self.sim).translation
+                )
+
+            rom = self.sim.get_rigid_object_manager()
+            aom = self.sim.get_articulated_object_manager()
+            is_articulated = aom.get_library_has_handle(ename.split("|")[0])
+
+            om = aom if is_articulated else rom
+
+            # in_or_on = "on"
+            # if len(self.sim.fur_to_rec[ename]["on"]) == 0:
+            #     in_or_on = "within"
+            #     print(
+            #         f"Had to choose point inside receptacle: {ename} - {self.sim.fur_to_rec[ename]}"
+            #     )
+
+            # random_recep_for_furn = self.sim.fur_to_rec[ename][in_or_on][0]
+            # translation = rom.get_object_by_handle(
+            #     ename.split("|")[0]
+            # ).translation
+
+            # translation = np.array(
+            #     random_recep_for_furn.get_global_transform(
+            #         self.sim
+            #     ).translation
+            # )
+            translation = np.array(
+                om.get_object_by_handle(ename.split("|")[0]).translation
+            )
+            return translation
         if self.check_type_matches(
             entity, SimulatorObjectType.MOVABLE_ENTITY.value
         ):

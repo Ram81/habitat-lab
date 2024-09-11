@@ -206,9 +206,9 @@ class RearrangeEpisodeGeneratorConfig:
     # If we want to re-generate the nav mesh or not
     regenerate_new_mesh: bool = True
     # The radius of the agent in meters
-    agent_radius: float = 0.25
+    agent_radius: float = 0.17
     # The height of the agent in meters
-    agent_height: float = 0.61
+    agent_height: float = 1.41
     # The max climb of the agent
     agent_max_climb: float = 0.02
     # The maximum slope that is considered walkable in degrees

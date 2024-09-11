@@ -40,19 +40,19 @@ class SpotRobot(MobileManipulator):
             ee_constraint=np.array([[[0.4, 1.2], [-0.7, 0.7], [0.25, 1.5]]]),
             cameras={
                 "articulated_agent_arm_depth": ArticulatedAgentCameraParams(
-                    cam_offset_pos=mn.Vector3(0.166, 0.0, 0.018),
+                    cam_offset_pos=mn.Vector3(0.166, 0.0, 0.418),
                     cam_orientation=mn.Vector3(0, -1.571, 0.0),
                     attached_link_id=6,
                     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
                 ),
                 "articulated_agent_arm_rgb": ArticulatedAgentCameraParams(
-                    cam_offset_pos=mn.Vector3(0.166, 0.023, 0.03),
+                    cam_offset_pos=mn.Vector3(0.166, 0.023, 0.43),
                     cam_orientation=mn.Vector3(0, -1.571, 0.0),
                     attached_link_id=6,
                     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),
                 ),
                 "articulated_agent_arm_panoptic": ArticulatedAgentCameraParams(
-                    cam_offset_pos=mn.Vector3(0.166, 0.0, 0.018),
+                    cam_offset_pos=mn.Vector3(0.166, 0.0, 0.418),
                     cam_orientation=mn.Vector3(0, -1.571, 0.0),
                     attached_link_id=6,
                     relative_transform=mn.Matrix4.rotation_z(mn.Deg(-90)),

@@ -38,11 +38,15 @@ def is_robot_hold_match(
     )
     grasp_mgr = sim_info.sim.get_agent_data(robot_id).grasp_mgr
 
+    # print(f"I hold state match : {robot_id} - {hold_state} -- {obj}")
     if hold_state:
         if obj is not None:
             # Robot must hold specific object.
             obj_idx = cast(int, sim_info.search_for_entity(obj))
             abs_obj_id = sim_info.sim.scene_obj_ids[obj_idx]
+            # print(
+            #     f"[When holding] hold state match : {robot_id} - {grasp_mgr.snap_idx} -- {abs_obj_id}\n\n"
+            # )
             return grasp_mgr.snap_idx == abs_obj_id
         else:
             # Robot can hold any object.
@@ -64,6 +68,7 @@ def set_robot_holding(
     )
     sim = sim_info.sim
     agent_data = sim.get_agent_data(robot_id)
+    # print("In set robot holding obj", hold_state, robot, obj)
     # Set the snapped object information
     if not hold_state and agent_data.grasp_mgr.is_grasped:
         agent_data.grasp_mgr.desnap(True)
@@ -74,9 +79,11 @@ def set_robot_holding(
             )
         # Swap objects to the desired object.
         obj_idx = cast(int, sim_info.search_for_entity(obj))
+        # print("In grasph obj", obj_idx, sim.scene_obj_ids)
         agent_data.grasp_mgr.desnap(True)
         sim.internal_step(-1)
         agent_data.grasp_mgr.snap_to_obj(sim.scene_obj_ids[obj_idx])
+        # print("In grasph obj after", agent_data.grasp_mgr._snapped_obj_id)
         sim.internal_step(-1)
 
 
@@ -175,6 +182,8 @@ def set_robot_position(
             sim_info.search_for_entity(robot),
         )
         agent_data = sim.get_agent_data(robot_id)
+    
+    print(f"Entity form pddl: {at_entity}")
     targ_pos = sim_info.get_entity_pos(at_entity)
 
     # Place some distance away from the object.

@@ -79,9 +79,9 @@ class RearrangeSim(HabitatSim):
                         sensor_config.uuid = (
                             f"{agent_name}_{sensor_config.uuid}"
                         )
-                        agent_cfg.sim_sensors[
-                            f"{agent_name}_{sensor_key}"
-                        ] = sensor_config
+                        agent_cfg.sim_sensors[f"{agent_name}_{sensor_key}"] = (
+                            sensor_config
+                        )
 
         super().__init__(config)
 
@@ -469,7 +469,7 @@ class RearrangeSim(HabitatSim):
 
         navmesh_path = osp.join(base_dir, "navmeshes", scene_name + ".navmesh")
 
-        if osp.exists(navmesh_path):
+        if osp.exists(navmesh_path) and False:
             self.pathfinder.load_nav_mesh(navmesh_path)
             logger.info(f"Loaded navmesh from {navmesh_path}")
         else:
@@ -492,8 +492,8 @@ class RearrangeSim(HabitatSim):
             navmesh_settings.agent_max_slope = agent_config.max_slope
             navmesh_settings.include_static_objects = True
             self.recompute_navmesh(self.pathfinder, navmesh_settings)
-            os.makedirs(osp.dirname(navmesh_path), exist_ok=True)
-            self.pathfinder.save_nav_mesh(navmesh_path)
+            # os.makedirs(osp.dirname(navmesh_path), exist_ok=True)
+            # self.pathfinder.save_nav_mesh(navmesh_path)
 
         # NOTE: allowing indoor islands only
         self._largest_indoor_island_idx = get_largest_island_index(

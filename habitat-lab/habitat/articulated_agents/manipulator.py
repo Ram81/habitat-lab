@@ -41,6 +41,8 @@ class Manipulator(ArticulatedAgentInterface):
         self.sim_obj = sim_obj
         self._maintain_link_order = maintain_link_order
 
+        self._camera_metadata = defaultdict(dict)
+
         # Adapt Manipulator params to support multiple end effector indices
         # NOTE: the follow members cache static info for improved efficiency over querying the API
         # maps joint ids to motor settings for convenience
@@ -88,9 +90,9 @@ class Manipulator(ArticulatedAgentInterface):
             # automatic joint limit clamping after each call to sim.step_physics()
             self.sim_obj.auto_clamp_joint_limits = True
         for link_id in self.sim_obj.get_link_ids():
-            self.joint_pos_indices[
-                link_id
-            ] = self.sim_obj.get_link_joint_pos_offset(link_id)
+            self.joint_pos_indices[link_id] = (
+                self.sim_obj.get_link_joint_pos_offset(link_id)
+            )
             self.joint_dof_indices[link_id] = self.sim_obj.get_link_dof_offset(
                 link_id
             )
@@ -150,6 +152,10 @@ class Manipulator(ArticulatedAgentInterface):
                     sens_obj = self._sim._sensors[sensor_name]._sensor_object
                     cam_info = self.params.cameras[cam_prefix]
 
+                    look_amount = self._camera_metadata.get(
+                        "look_at_offset", 0
+                    )
+
                     if cam_info.attached_link_id == -1:
                         link_trans = self.sim_obj.transformation
                     else:
@@ -171,6 +177,7 @@ class Manipulator(ArticulatedAgentInterface):
                             cam_info.cam_look_at_pos,
                             mn.Vector3(0, 1, 0),
                         )
+
                     cam_transform = (
                         link_trans
                         @ cam_transform
@@ -181,6 +188,14 @@ class Manipulator(ArticulatedAgentInterface):
                     sens_obj.node.transformation = (
                         orthonormalize_rotation_shear(cam_transform)
                     )
+
+                    if "arm" in sensor_name:
+                        sens_obj.node.rotation = (
+                            sens_obj.node.rotation
+                            * mn.Quaternion.rotation(
+                                mn.Deg(look_amount), mn.Vector3.x_axis()
+                            )
+                        )
 
         if self._fix_joint_values is not None:
             self.arm_joint_pos = self._fix_joint_values

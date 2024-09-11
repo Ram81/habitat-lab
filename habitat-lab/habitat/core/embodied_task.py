@@ -317,9 +317,12 @@ class EmbodiedTask:
     ):
         if isinstance(action_name, (int, np.integer)):
             action_name = self.get_action_name(action_name)
-        assert (
-            action_name in self.actions
-        ), f"Can't find '{action_name}' action in {self.actions.keys()}."
+        # assert (
+        #     action_name in self.actions
+        # ), f"Can't find '{action_name}' action in {self.actions.keys()}."
+        if action_name not in self.actions:
+            # print(f"Actions: {self.actions.keys()} -- {action_name}")
+            action_name = "noop"
         task_action = self.actions[action_name]
         return task_action.step(
             **action["action_args"],

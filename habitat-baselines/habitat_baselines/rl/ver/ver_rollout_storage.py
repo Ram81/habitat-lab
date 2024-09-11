@@ -144,6 +144,7 @@ class VERRolloutStorage(RolloutStorage):
         actor_critic,
         variable_experience: bool,
         is_double_buffered: bool = False,
+        **kwargs,
     ):
         super().__init__(
             numsteps,
