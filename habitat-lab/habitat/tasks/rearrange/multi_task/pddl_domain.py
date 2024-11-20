@@ -306,7 +306,7 @@ class PddlDomain:
             self._parse_expr(
                 sub_expr, {**existing_entities, **{x.name: x for x in inputs}}
             )
-            for sub_expr in load_d["sub_exprs"][:-1]
+            for sub_expr in load_d["sub_exprs"]
         ]
         quantifier = load_d.get("quantifier", None)
         if quantifier is not None:

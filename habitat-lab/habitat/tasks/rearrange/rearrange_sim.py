@@ -3,7 +3,6 @@
 # Copyright (c) Meta Platforms, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
 import os
 import os.path as osp
 import time
@@ -17,6 +16,7 @@ from typing import (
     Optional,
     Tuple,
     Union,
+    cast,
 )
 
 import magnum as mn
@@ -33,6 +33,7 @@ from habitat.core.simulator import AgentState, Observations
 from habitat.datasets.rearrange.navmesh_utils import get_largest_island_index
 from habitat.datasets.rearrange.rearrange_dataset import RearrangeEpisode
 from habitat.datasets.rearrange.samplers.receptacle import (
+    AABBReceptacle,
     Receptacle,
     find_receptacles,
 )
@@ -105,6 +106,7 @@ class RearrangeSim(HabitatSim):
         self._scene_obj_ids: List[int] = []
         # The receptacle information cached between all scenes.
         self._receptacles_cache: Dict[str, Dict[str, Receptacle]] = {}
+        self._aabb_receps_cache = {}
         # The per episode receptacle information.
         self._receptacles: Dict[str, Receptacle] = {}
         # Used to get data from the RL environment class to sensors.
@@ -658,7 +660,7 @@ class RearrangeSim(HabitatSim):
             obj_counts[obj_handle] += 1
 
         if new_scene:
-            self._receptacles = self._create_recep_info(
+            self._receptacles, self._aabb_receps = self._create_recep_info(
                 ep_info.scene_id, list(self._handle_to_object_id.keys())
             )
 
@@ -686,7 +688,8 @@ class RearrangeSim(HabitatSim):
                 )
                 self.kinematic_relationship_manager.initialize_from_obj_to_rec_pairs(
                     ep_info.name_to_receptacle,
-                    list(self._receptacles.values()),
+                    list(self._aabb_receps.values()),
+                    sim_type=self.habitat_config.type,
                 )
 
     def _create_recep_info(
@@ -697,10 +700,39 @@ class RearrangeSim(HabitatSim):
                 self,
                 ignore_handles=ignore_handles,
             )
-            self._receptacles_cache[scene_id] = {
-                recep.unique_name: recep for recep in all_receps
-            }
-        return self._receptacles_cache[scene_id]
+            receps = {}
+            aab_receps = {}
+
+            if self.habitat_config.type == "InteractiveQASim-v0":
+                for recep in all_receps:
+                    receps[recep.unique_name] = recep
+                    aab_receps[recep.unique_name] = recep
+            else:
+                for recep in all_receps:
+                    recep = cast(AABBReceptacle, recep)
+                    local_bounds = recep.bounds
+                    global_T = recep.get_global_transform(self)
+                    # Some coordinates may be flipped by the global transformation,
+                    # mixing the minimum and maximum bound coordinates.
+                    bounds = np.stack(
+                        [
+                            global_T.transform_point(local_bounds.min),
+                            global_T.transform_point(local_bounds.max),
+                        ],
+                        axis=0,
+                    )
+                    receps[recep.name] = mn.Range3D(
+                        np.min(bounds, axis=0), np.max(bounds, axis=0)
+                    )
+                    aab_receps[recep.name] = recep
+
+            self._receptacles_cache[scene_id] = receps
+            self._aabb_receps_cache[scene_id] = aab_receps
+            # { recep.unique_name: recep for recep in all_receps}
+        return (
+            self._receptacles_cache[scene_id],
+            self._aabb_receps_cache[scene_id],
+        )
 
     def _create_obj_viz(self):
         """

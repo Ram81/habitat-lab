@@ -196,6 +196,7 @@ class Manipulator(ArticulatedAgentInterface):
                                 mn.Deg(look_amount), mn.Vector3.x_axis()
                             )
                         )
+                        # print(f"Post act Cam transform: {sens_obj}")
 
         if self._fix_joint_values is not None:
             self.arm_joint_pos = self._fix_joint_values

@@ -73,6 +73,7 @@ class PPOTrainer(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
+
     supported_tasks = ["Nav-v0"]
 
     SHORT_ROLLOUT_THRESHOLD: float = 0.25
@@ -274,9 +275,9 @@ class PPOTrainer(BaseRLTrainer):
                 self._encoder is not None
             ), "Visual encoder is not specified for this actor"
             with inference_mode():
-                batch[
-                    PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-                ] = self._encoder(batch)
+                batch[PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY] = (
+                    self._encoder(batch)
+                )
 
         self._agent.rollouts.insert_first_observations(batch)
 
@@ -458,7 +459,21 @@ class PPOTrainer(BaseRLTrainer):
                     self.running_episode_stats[k] = torch.zeros_like(
                         self.running_episode_stats["count"]
                     )
-                self.running_episode_stats[k][env_slice] += v.where(done_masks, v.new_zeros(()))  # type: ignore
+
+                try:
+                    # logger.info(
+                    #     f"[strat ] Done masks: {done_masks.shape} - {self.running_episode_stats[k][env_slice].shape}"
+                    # )
+                    # logger.info(
+                    #     f"Done masks: {done_masks.shape} - {self.running_episode_stats[k][env_slice].shape} - {v.where(done_masks, v.new_zeros(())).shape}"
+                    # )
+
+                    self.running_episode_stats[k][env_slice] += v.where(done_masks, v.new_zeros(()))  # type: ignore
+                except Exception as e:
+                    logger.info(
+                        f"[Error] : {e}, Done masks: {done_masks.shape} - {k} - {self.running_episode_stats[k][env_slice].shape} - {v.shape}"
+                    )
+                    raise ValueError(e)
 
             self.current_episode_reward[env_slice].masked_fill_(
                 done_masks, 0.0
@@ -466,9 +481,9 @@ class PPOTrainer(BaseRLTrainer):
 
         if self._is_static_encoder:
             with inference_mode(), g_timer.avg_time("trainer.visual_features"):
-                batch[
-                    PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-                ] = self._encoder(batch)
+                batch[PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY] = (
+                    self._encoder(batch)
+                )
 
         self._agent.rollouts.insert(
             next_observations=batch,

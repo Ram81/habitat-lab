@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
+import magnum as mn
 import numpy as np
 
 from habitat.datasets.rearrange.samplers.receptacle import Receptacle
@@ -222,6 +223,11 @@ class PddlSimInfo:
         ):
             if ename in self.receptacles:
                 recep = self.receptacles[ename]
+                if isinstance(recep, mn.Range3D):
+                    # global_T = recep.get_global_transform(sim_info.sim)
+                    # return np.array(global_T.transform_point(recep.center()))
+                    return np.array(recep.center())
+
                 return np.array(
                     recep.get_global_transform(self.sim).translation
                 )

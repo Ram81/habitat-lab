@@ -1016,6 +1016,8 @@ def get_recs_from_filter_file(
 
     :param filter_types: Specify a particular subset of filter types to include.
     """
+    if rec_filter_filepath is None:
+        return []
 
     # all allowed filter set types include:
     all_possible_filter_types = [

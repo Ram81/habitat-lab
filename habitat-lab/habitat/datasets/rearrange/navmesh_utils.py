@@ -40,6 +40,13 @@ def snap_point_is_occluded(
 
     :return: whether or not the target is considered occluded from the snap_point.
     """
+
+    if np.any(np.isnan(target)):
+        raise ValueError(f"target point {target} is not valid.")
+
+    if np.any(np.isnan(snap_point)):
+        raise ValueError(f"snap_point {snap_point} is not valid.")
+
     # start from the top, assuming the agent's eyes are not at the bottom.
     cur_height = height
     while cur_height > 0:

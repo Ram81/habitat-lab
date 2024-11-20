@@ -49,6 +49,8 @@ class RLTaskEnv(habitat.RLEnv):
         self._slack_reward = self.config.task.slack_reward
         self._success_reward = self.config.task.success_reward
         self._end_on_success = self.config.task.end_on_success
+        print(f"Env reward: {self._success_reward} - {self._slack_reward}")
+
         assert (
             self._reward_measure_name is not None
         ), "The key task.reward_measure cannot be None"

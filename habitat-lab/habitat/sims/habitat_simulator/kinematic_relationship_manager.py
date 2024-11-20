@@ -166,7 +166,7 @@ class KinematicRelationshipManager:
         self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
 
     def initialize_from_obj_to_rec_pairs(
-        self, obj_to_rec: Dict[str, str], receptacles: List[Receptacle]
+        self, obj_to_rec: Dict[str, str], receptacles: List[Receptacle], sim_type: str = ""
     ) -> None:
         """
         Initialize the RelationshipGraph from object to receptacle mappings as found in a RearrangeEpisode.
@@ -178,7 +178,9 @@ class KinematicRelationshipManager:
         self.relationship_graph = RelationshipGraph()
 
         # construct a Dict of Receptacle unique_name to Receptacle object
-        unique_name_to_rec = {rec.unique_name: rec for rec in receptacles}
+        unique_name_to_rec = {rec.name: rec for rec in receptacles}
+        if sim_type == "InteractiveQASim-v0":
+            unique_name_to_rec = {rec.unique_name: rec for rec in receptacles}
 
         # construct the parent relations
         for obj_handle, rec_unique_name in obj_to_rec.items():

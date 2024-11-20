@@ -4,6 +4,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
+from habitat.datasets.rearrange.samplers.receptacle import AABBReceptacle
 from habitat.sims.habitat_simulator.sim_utilities import get_ao_global_bb
 from habitat.tasks.rearrange.marker_info import MarkerInfo
 from habitat.tasks.rearrange.multi_task.rearrange_pddl import (
@@ -148,6 +149,8 @@ def is_robot_at_position(
     pos_robot = np.array([1.0, 0.0, 0.0])
     # Get the angle
     angle = np.arccos(np.dot(pos, pos_robot))
+    # import pdb
+    # pdb.set_trace()
 
     # Check the distance threshold.
     if dist > dist_thresh:
@@ -182,8 +185,8 @@ def set_robot_position(
             sim_info.search_for_entity(robot),
         )
         agent_data = sim.get_agent_data(robot_id)
-    
-    print(f"Entity form pddl: {at_entity}")
+
+    # print(f"Entity form pddl: {at_entity}")
     targ_pos = sim_info.get_entity_pos(at_entity)
 
     # Place some distance away from the object.
