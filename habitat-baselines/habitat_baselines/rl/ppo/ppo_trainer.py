@@ -836,24 +836,29 @@ class PPOTrainer(BaseRLTrainer):
 
         # Some configurations require not to load the checkpoint, like when using
         # a hierarchial policy
+        step_id = checkpoint_index
         if self.config.habitat_baselines.eval.should_load_ckpt:
             # map_location="cpu" is almost always better than mapping to a CUDA device.
             ckpt_dict = self.load_checkpoint(
                 checkpoint_path, map_location="cpu"
             )
-            step_id = ckpt_dict["extra_state"]["step"]
+            # step_id = ckpt_dict["extra_state"]["step"]
             logger.info(f"Loaded checkpoint trained for {step_id} steps")
         else:
             ckpt_dict = {"config": None}
 
         if "config" not in ckpt_dict:
-            ckpt_dict["config"] = None
+            ckpt_dict["config"] = self.config
 
         config = self._get_resume_state_config_or_new_config(
             ckpt_dict["config"]
         )
         with read_write(config):
             config.habitat.dataset.split = config.habitat_baselines.eval.split
+            # config.habitat.environment.iterator_options.cycle = False
+            config.habitat.environment.iterator_options.shuffle = False
+
+        print(f"Data path: {config.habitat.dataset}")
 
         if len(self.config.habitat_baselines.eval.video_option) > 0:
             n_agents = len(config.habitat.simulator.agents)

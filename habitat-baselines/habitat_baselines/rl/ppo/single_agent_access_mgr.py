@@ -276,7 +276,10 @@ class SingleAgentAccessMgr(AgentAccessMgr):
         self._actor_critic.load_state_dict(ckpt["state_dict"])
 
     def load_state_dict(self, state: Dict) -> None:
-        self._actor_critic.load_state_dict(state["state_dict"])
+        if "state_dict" in state:
+            self._actor_critic.load_state_dict(state["state_dict"])
+        else:
+            self._actor_critic._orig_mod.load_state_dict(state["ckpt_dict"])
         if self._updater is not None:
             self._updater.load_state_dict(state)
             if "lr_sched_state" in state:
