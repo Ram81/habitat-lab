@@ -10,6 +10,7 @@ from typing import Any, Dict, Iterator, Optional
 import numpy as np
 import torch
 
+from habitat import logger
 from habitat_baselines.common.baseline_registry import baseline_registry
 from habitat_baselines.common.storage import Storage
 from habitat_baselines.common.tensor_dict import DictTree, TensorDict
@@ -146,6 +147,8 @@ class RolloutStorage(Storage):
             int(buffer_index * self._num_envs / self._nbuffers),
             int((buffer_index + 1) * self._num_envs / self._nbuffers),
         )
+
+        # print("Actions: ", actions.shape, next_recurrent_hidden_states.shape)
 
         if len(next_step) > 0:
             self.buffers.set(

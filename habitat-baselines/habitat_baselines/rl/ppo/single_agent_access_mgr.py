@@ -210,9 +210,11 @@ class SingleAgentAccessMgr(AgentAccessMgr):
         if self._config.habitat_baselines.rl.ddppo.pretrained:
             actor_critic.load_state_dict(
                 {  # type: ignore
-                    k[len("actor_critic.") :]: v
-                    for k, v in pretrained_state["state_dict"].items()
+                    k: v for k, v in pretrained_state["state_dict"].items()
                 }
+            )
+            print(
+                f"Loaded pretrained weights from {self._config.habitat_baselines.rl.ddppo.pretrained_weights}"
             )
         elif self._config.habitat_baselines.rl.ddppo.pretrained_encoder:
             prefix = "actor_critic.net.visual_encoder."

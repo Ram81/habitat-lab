@@ -1213,6 +1213,7 @@ def get_active_obs_transforms(
         config.habitat_baselines.rl.policy[agent_name], "obs_transforms"
     ):
         for obs_transform_config in obs_trans_conf.values():
+            logger.info(f"Create obs transform {obs_transform_config}")
             obs_trans_cls = baseline_registry.get_obs_transformer(
                 obs_transform_config.type
             )

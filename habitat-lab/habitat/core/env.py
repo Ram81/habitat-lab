@@ -258,6 +258,7 @@ class Env:
         self._episode_force_changed = False
 
         assert self._current_episode is not None, "Reset requires an episode"
+
         self.reconfigure(self._config)
 
         observations = self.task.reset(episode=self.current_episode)

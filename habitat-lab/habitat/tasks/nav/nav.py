@@ -128,6 +128,7 @@ class PointGoalSensor(Sensor):
             in cartesian or polar coordinates.
         _dimensionality: number of dimensions used to specify the goal
     """
+
     cls_uuid: str = "pointgoal"
 
     def __init__(
@@ -221,6 +222,7 @@ class ImageGoalSensor(Sensor):
         sim: reference to the simulator for calculating task observations.
         config: config for the ImageGoal sensor.
     """
+
     cls_uuid: str = "imagegoal"
 
     def __init__(
@@ -308,6 +310,7 @@ class IntegratedPointGoalGPSAndCompassSensor(PointGoalSensor):
             in cartesian or polar coordinates.
         _dimensionality: number of dimensions used to specify the goal
     """
+
     cls_uuid: str = "pointgoal_with_gps_compass"
 
     def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
@@ -335,6 +338,7 @@ class HeadingSensor(Sensor):
         sim: reference to the simulator for calculating task observations.
         config: config for the sensor.
     """
+
     cls_uuid: str = "heading"
 
     def __init__(
@@ -377,6 +381,7 @@ class EpisodicCompassSensor(HeadingSensor):
     r"""The agents heading in the coordinate frame defined by the episode,
     theta=0 is defined by the agents state at t=0
     """
+
     cls_uuid: str = "compass"
 
     def _get_uuid(self, *args: Any, **kwargs: Any) -> str:
@@ -408,6 +413,7 @@ class EpisodicGPSSensor(Sensor):
     Attributes:
         _dimensionality: number of dimensions used to specify the agents position
     """
+
     cls_uuid: str = "gps"
 
     def __init__(
@@ -463,6 +469,7 @@ class ProximitySensor(Sensor):
         sim: reference to the simulator for calculating task observations.
         config: config for the sensor.
     """
+
     cls_uuid: str = "proximity"
 
     def __init__(self, sim, config, *args: Any, **kwargs: Any):

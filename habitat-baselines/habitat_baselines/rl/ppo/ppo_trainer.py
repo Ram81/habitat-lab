@@ -15,6 +15,7 @@ import hydra
 import numpy as np
 import torch
 from omegaconf import OmegaConf
+from PIL import Image
 
 import habitat_baselines.rl.multi_agent  # noqa: F401.
 from habitat import VectorEnv, logger
@@ -49,6 +50,7 @@ from habitat_baselines.rl.ddppo.ddp_utils import (
 if TYPE_CHECKING:
     from omegaconf import DictConfig
 
+from habitat.utils.visualizations.utils import observations_to_image
 from habitat_baselines.rl.ddppo.policy import PointNavResNetNet
 from habitat_baselines.rl.ppo.agent_access_mgr import AgentAccessMgr
 from habitat_baselines.rl.ppo.evaluator import Evaluator
@@ -73,6 +75,7 @@ class PPOTrainer(BaseRLTrainer):
     r"""Trainer class for PPO algorithm
     Paper: https://arxiv.org/abs/1707.06347.
     """
+
     supported_tasks = ["Nav-v0"]
 
     SHORT_ROLLOUT_THRESHOLD: float = 0.25
@@ -274,9 +277,9 @@ class PPOTrainer(BaseRLTrainer):
                 self._encoder is not None
             ), "Visual encoder is not specified for this actor"
             # with torch.no_grad():
-            batch[
-                PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-            ] = self._encoder(batch)
+            batch[PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY] = (
+                self._encoder(batch)
+            )
 
         self._agent.rollouts.insert_first_observations(batch)
 
@@ -340,7 +343,9 @@ class PPOTrainer(BaseRLTrainer):
         """
         return torch.load(checkpoint_path, *args, **kwargs)
 
-    def _compute_actions_and_step_envs(self, buffer_index: int = 0):
+    def _compute_actions_and_step_envs(
+        self, buffer_index: int = 0, step: int = 0, update: int = 0
+    ):
         num_envs = self.envs.num_envs
         env_slice = slice(
             int(buffer_index * num_envs / self._agent.nbuffers),
@@ -368,6 +373,12 @@ class PPOTrainer(BaseRLTrainer):
                 step_batch["masks"],
                 **step_batch_lens,
             )
+
+        # for i in range(len(step_batch["observations"]["rgb"])):
+        #     img = observations_to_image({"rgb": step_batch["observations"]["rgb"][i]}, {})
+        #     # print(f"Step {step}: {step_batch['observations']['rgb'].shape} {img.shape} - {img.dtype}")
+        #     img = Image.fromarray(img)
+        #     img.save(f"data/video_dir/images/obs_{update}_{i}_{step}.png")
 
         profiling_wrapper.range_pop()  # compute actions
 
@@ -466,9 +477,9 @@ class PPOTrainer(BaseRLTrainer):
 
         if self._is_static_encoder:
             with g_timer.avg_time("trainer.visual_features"):
-                batch[
-                    PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY
-                ] = self._encoder(batch)
+                batch[PointNavResNetNet.PRETRAINED_VISUAL_FEATURES_KEY] = (
+                    self._encoder(batch)
+                )
 
         self._agent.rollouts.insert(
             next_observations=batch,
@@ -838,10 +849,16 @@ class PPOTrainer(BaseRLTrainer):
             ckpt_dict["config"]
         )
         with read_write(config):
-            config.habitat_baselines.num_environments = self.config.habitat_baselines.num_environments
+            config.habitat_baselines.num_environments = (
+                self.config.habitat_baselines.num_environments
+            )
             config.habitat.dataset.split = config.habitat_baselines.eval.split
-            config.habitat.dataset.data_path = self.config.habitat.dataset.data_path
-        print("config data", config.habitat.dataset, self.config.habitat.dataset)
+            config.habitat.dataset.data_path = (
+                self.config.habitat.dataset.data_path
+            )
+        print(
+            "config data", config.habitat.dataset, self.config.habitat.dataset
+        )
 
         if len(self.config.habitat_baselines.eval.video_option) > 0:
             n_agents = len(config.habitat.simulator.agents)
@@ -887,7 +904,7 @@ class PPOTrainer(BaseRLTrainer):
         if "extra_state" in ckpt_dict and "step" in ckpt_dict["extra_state"]:
             step_id = ckpt_dict["extra_state"]["step"]
 
-        #with read_write(config):
+        # with read_write(config):
         #    config.habitat_baselines.evaluator["_target_"] = "habitat_transformers.trainer.TransformersHabitatEvaluator"
 
         evaluator = hydra.utils.instantiate(config.habitat_baselines.evaluator)

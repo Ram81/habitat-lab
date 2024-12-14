@@ -737,6 +737,6 @@ class HabitatSim(habitat_sim.Simulator, Simulator):
                 transform.translation,
                 rotation,
             )
-        observations[
-            KEYFRAME_OBSERVATION_KEY
-        ] = self.gfx_replay_manager.extract_keyframe()
+        observations[KEYFRAME_OBSERVATION_KEY] = (
+            self.gfx_replay_manager.extract_keyframe()
+        )
