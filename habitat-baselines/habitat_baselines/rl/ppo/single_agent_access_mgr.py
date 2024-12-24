@@ -255,7 +255,7 @@ class SingleAgentAccessMgr(AgentAccessMgr):
         if self._updater.optimizer is None:
             return {"state_dict": {}, "optim_state": {}}
         ret = {
-            "state_dict": {},
+            "state_dict": self._actor_critic._orig_mod.state_dict(),
             **self._updater.get_resume_state(),
         }
         if self._lr_scheduler is not None:
@@ -263,7 +263,7 @@ class SingleAgentAccessMgr(AgentAccessMgr):
         return ret
 
     def get_save_state(self):
-        return {"state_dict": {}}
+        return {"state_dict": self._actor_critic._orig_mod.state_dict()}
 
     def eval(self):
         self._actor_critic.eval()
@@ -277,7 +277,7 @@ class SingleAgentAccessMgr(AgentAccessMgr):
 
     def load_state_dict(self, state: Dict) -> None:
         if "state_dict" in state:
-            self._actor_critic.load_state_dict(state["state_dict"])
+            self._actor_critic._orig_mod.load_state_dict(state["state_dict"])
         else:
             self._actor_critic._orig_mod.load_state_dict(state["ckpt_dict"])
         if self._updater is not None:

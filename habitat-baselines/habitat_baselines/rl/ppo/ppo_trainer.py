@@ -810,7 +810,6 @@ class PPOTrainer(BaseRLTrainer):
                         ),
                     )
                     count_checkpoints += 1
-
                 profiling_wrapper.range_pop()  # train update
 
             self.envs.close()
