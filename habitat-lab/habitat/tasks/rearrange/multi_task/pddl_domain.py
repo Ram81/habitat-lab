@@ -68,9 +68,7 @@ class PddlDomain:
 
         if not osp.isabs(domain_file_path):
             parent_dir = osp.dirname(__file__)
-            domain_file_path = osp.join(
-                parent_dir, "domain_configs", domain_file_path
-            )
+            domain_file_path = osp.join(parent_dir, "domain_configs", domain_file_path)
 
         if "." not in domain_file_path.split("/")[-1]:
             domain_file_path += ".yaml"
@@ -120,9 +118,7 @@ class PddlDomain:
                 for p in action_d["postcondition"]
             ]
 
-            action = PddlAction(
-                action_d["name"], parameters, pre_cond, post_cond
-            )
+            action = PddlAction(action_d["name"], parameters, pre_cond, post_cond)
             self._orig_actions[action.name] = action
         self._actions = dict(self._orig_actions)
 
@@ -204,14 +200,10 @@ class PddlDomain:
 
         for parent_type, sub_types in domain_def["types"].items():
             if parent_type not in self._expr_types:
-                self._expr_types[parent_type] = ExprType(
-                    parent_type, base_entity
-                )
+                self._expr_types[parent_type] = ExprType(parent_type, base_entity)
             for sub_type in sub_types:
                 if sub_type in self._expr_types:
-                    self._expr_types[sub_type].parent = self._expr_types[
-                        parent_type
-                    ]
+                    self._expr_types[sub_type].parent = self._expr_types[parent_type]
                 else:
                     self._expr_types[sub_type] = ExprType(
                         sub_type, self._expr_types[parent_type]
@@ -298,9 +290,13 @@ class PddlDomain:
 
         inputs = load_d.get("inputs", [])
         inputs = [
-            PddlEntity(x["name"], self.expr_types[x["expr_type"]])
-            for x in inputs
+            PddlEntity(x["name"], self.expr_types[x["expr_type"]]) for x in inputs
         ]
+        # print(f"Inputs: {load_d}")
+        # for i, input in enumerate(inputs):
+        #     print(f"Input {i}: {input.name} {input.expr_type}")
+        # for i, input in enumerate(existing_entities):
+        #     print(f"Input e {i}: {input} ")
 
         sub_exprs = [
             self._parse_expr(
@@ -337,8 +333,7 @@ class PddlDomain:
             expr_types=self.expr_types,
             obj_ids=sim.handle_to_object_id,
             target_ids={
-                f"TARGET_{id_to_name[idx]}": idx
-                for idx in sim.get_targets()[0]
+                f"TARGET_{id_to_name[idx]}": idx for idx in sim.get_targets()[0]
             },
             art_handles={k.handle: i for i, k in enumerate(sim.art_objs)},
             marker_handles=sim.get_all_markers(),
@@ -404,9 +399,7 @@ class PddlDomain:
         all_entities = self.all_entities.values()
         true_preds: List[Predicate] = []
         for pred in self.predicates.values():
-            for entity_input in itertools.permutations(
-                all_entities, pred.n_args
-            ):
+            for entity_input in itertools.permutations(all_entities, pred.n_args):
                 if not pred.are_args_compatible(list(entity_input)):
                     continue
 
@@ -427,9 +420,7 @@ class PddlDomain:
         all_entities = self.all_entities.values()
         poss_preds: List[Predicate] = []
         for pred in self.predicates.values():
-            for entity_input in itertools.combinations(
-                all_entities, pred.n_args
-            ):
+            for entity_input in itertools.combinations(all_entities, pred.n_args):
                 if not pred.are_args_compatible(entity_input):
                     continue
 
@@ -469,13 +460,10 @@ class PddlDomain:
             if action.name in restricted_action_names:
                 continue
 
-            for entity_input in itertools.combinations(
-                all_entities, action.n_args
-            ):
+            for entity_input in itertools.combinations(all_entities, action.n_args):
                 # Check that all the filter_entities are in entity_input
                 matches_filter = all(
-                    filter_entity in entity_input
-                    for filter_entity in filter_entities
+                    filter_entity in entity_input for filter_entity in filter_entities
                 )
                 if not matches_filter:
                     continue
@@ -621,8 +609,7 @@ class PddlProblem(PddlDomain):
         }
 
         self.init = [
-            self.parse_predicate(p, self._objects)
-            for p in problem_def.get("init", [])
+            self.parse_predicate(p, self._objects) for p in problem_def.get("init", [])
         ]
         try:
             self.goal = self.parse_only_logical_expr(
@@ -630,9 +617,7 @@ class PddlProblem(PddlDomain):
             )
             self.goal, _ = self.expand_quantifiers(self.goal)
         except Exception as e:
-            raise ValueError(
-                f"Could not parse goal cond {problem_def['goal']}"
-            ) from e
+            raise ValueError(f"Could not parse goal cond {problem_def['goal']}") from e
         self.stage_goals = {}
         for stage_name, cond in problem_def["stage_goals"].items():
             expr = self.parse_only_logical_expr(cond, self.all_entities)

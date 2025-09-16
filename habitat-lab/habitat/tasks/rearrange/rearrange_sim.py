@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 import os
 import os.path as osp
+import pdb
 import time
 from collections import defaultdict
 from typing import (
@@ -298,7 +299,7 @@ class RearrangeSim(HabitatSim):
         ep_info.rigid_objs = sorted(ep_info.rigid_objs, key=lambda x: x[0])
         obj_names = [x[0] for x in ep_info.rigid_objs]
         # Only remove and re-add objects if we have a new set of objects.
-        should_add_objects = True # self._prev_obj_names != obj_names
+        should_add_objects = True  # self._prev_obj_names != obj_names
         self._prev_obj_names = obj_names
 
         self.agents_mgr.pre_obj_clear()

@@ -14,13 +14,12 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Set
 import hydra
 import numpy as np
 import torch
-from omegaconf import OmegaConf
-
-import habitat_baselines.rl.multi_agent  # noqa: F401.
 from habitat import VectorEnv, logger
 from habitat.config import read_write
 from habitat.config.default import get_agent_config
 from habitat.utils import profiling_wrapper
+from omegaconf import OmegaConf
+
 from habitat_baselines.common import VectorEnvFactory
 from habitat_baselines.common.base_trainer import BaseRLTrainer
 from habitat_baselines.common.baseline_registry import baseline_registry
@@ -34,7 +33,6 @@ from habitat_baselines.common.tensorboard_utils import (
     TensorboardWriter,
     get_writer,
 )
-from habitat_baselines.rl.ddppo.algo import DDPPO  # noqa: F401.
 from habitat_baselines.rl.ddppo.ddp_utils import (
     EXIT,
     get_distrib_size,
@@ -52,9 +50,6 @@ if TYPE_CHECKING:
 from habitat_baselines.rl.ddppo.policy import PointNavResNetNet
 from habitat_baselines.rl.ppo.agent_access_mgr import AgentAccessMgr
 from habitat_baselines.rl.ppo.evaluator import Evaluator
-from habitat_baselines.rl.ppo.single_agent_access_mgr import (  # noqa: F401.
-    SingleAgentAccessMgr,
-)
 from habitat_baselines.utils.common import (
     batch_obs,
     inference_mode,
@@ -246,6 +241,12 @@ class PPOTrainer(BaseRLTrainer):
         self._init_envs()
 
         self.device = get_device(self.config)
+        slurm_node = os.environ.get("SLURMD_NODENAME", None)
+        cuda_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
+
+        logger.info(
+            f"Initialized envs for rank: {local_rank} - {self.device} - {slurm_node} -{cuda_devices} workers"
+        )
 
         if rank0_only() and not os.path.isdir(
             self.config.habitat_baselines.checkpoint_folder
@@ -258,6 +259,8 @@ class PPOTrainer(BaseRLTrainer):
         if self._is_distributed:
             self._agent.init_distributed(find_unused_params=False)  # type: ignore
         self._agent.post_init()
+
+        logger.info("DDP Agent initialized")
 
         self._is_static_encoder = (
             not self.config.habitat_baselines.rl.ddppo.train_encoder
@@ -697,10 +700,10 @@ class PPOTrainer(BaseRLTrainer):
             count_checkpoints = requeue_stats["count_checkpoints"]
             prev_time = requeue_stats["prev_time"]
 
-            self.running_episode_stats = requeue_stats["running_episode_stats"]
-            self.window_episode_stats.update(
-                requeue_stats["window_episode_stats"]
-            )
+            # self.running_episode_stats = requeue_stats["running_episode_stats"]
+            # self.window_episode_stats.update(
+            #     requeue_stats["window_episode_stats"]
+            # )
             resume_run_id = requeue_stats.get("run_id", None)
 
         with (
@@ -830,6 +833,9 @@ class PPOTrainer(BaseRLTrainer):
         Returns:
             None
         """
+        if get_distrib_size()[2] == 1:
+            self._is_distributed = False
+
         if self._is_distributed:
             raise RuntimeError("Evaluation does not support distributed mode")
 
@@ -852,12 +858,33 @@ class PPOTrainer(BaseRLTrainer):
         config = self._get_resume_state_config_or_new_config(
             ckpt_dict["config"]
         )
+
         with read_write(config):
-            config.habitat.dataset.split = config.habitat_baselines.eval.split
+            config.habitat.dataset.split = (
+                self.config.habitat_baselines.eval.split
+            )
+            config.habitat.dataset.data_path = (
+                self.config.habitat.dataset.data_path
+            )
             # config.habitat.environment.iterator_options.cycle = False
             config.habitat.environment.iterator_options.shuffle = False
+            config.habitat_baselines.evaluator = (
+                self.config.habitat_baselines.evaluator
+            )
+            config.habitat_baselines.num_environments = (
+                self.config.habitat_baselines.num_environments
+            )
+            config.habitat.task.measurements = (
+                self.config.habitat.task.measurements
+            )
+            config.habitat_baselines.eval_keys_to_include_in_name = (
+                self.config.habitat_baselines.eval_keys_to_include_in_name
+            )
+            config.habitat.task.actions = self.config.habitat.task.actions
 
-        print(f"Data path: {config.habitat.dataset}")
+        print(
+            f"Data path: {config.habitat.dataset}; Num envs: {config.habitat_baselines.num_environments}"
+        )
 
         if len(self.config.habitat_baselines.eval.video_option) > 0:
             n_agents = len(config.habitat.simulator.agents)

@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
+import os
 import gym.spaces as spaces
 import numpy as np
 import torch
@@ -166,9 +167,10 @@ class SingleAgentAccessMgr(AgentAccessMgr):
             )
 
         updater = updater_cls.from_config(actor_critic, self._ppo_cfg)
+        slurm_node = os.environ.get("SLURMD_NODENAME", None)
         logger.info(
-            "Agent number of parameters: {}".format(
-                sum(param.numel() for param in updater.parameters())
+            "Agent number of parameters: {}; SLURM NODE: {}".format(
+                sum(param.numel() for param in updater.parameters()), slurm_node
             )
         )
         return updater

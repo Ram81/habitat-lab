@@ -64,9 +64,7 @@ def cosine_decay(progress: float) -> float:
 
 
 class CustomFixedCategorical(torch.distributions.Categorical):  # type: ignore
-    def sample(
-        self, sample_shape: Size = torch.Size()  # noqa: B008
-    ) -> Tensor:
+    def sample(self, sample_shape: Size = torch.Size()) -> Tensor:  # noqa: B008
         return super().sample(sample_shape).unsqueeze(-1)
 
     def log_probs(self, actions: Tensor) -> Tensor:
@@ -99,9 +97,7 @@ class CategoricalNet(nn.Module):
 
 
 class CustomNormal(torch.distributions.normal.Normal):
-    def sample(
-        self, sample_shape: Size = torch.Size()  # noqa: B008
-    ) -> Tensor:
+    def sample(self, sample_shape: Size = torch.Size()) -> Tensor:  # noqa: B008
         return self.rsample(sample_shape)
 
     def log_probs(self, actions) -> Tensor:
@@ -195,6 +191,7 @@ class _ObservationBatchingCache(metaclass=Singleton):
     r"""Helper for batching observations that maintains a cpu-side tensor
     that is the right size and is pinned to cuda memory
     """
+
     _pool: Dict[Any, Union[torch.Tensor, np.ndarray]] = {}
 
     def get(
@@ -228,11 +225,7 @@ class _ObservationBatchingCache(metaclass=Singleton):
         cache = torch.empty(
             num_obs, *sensor.size(), dtype=sensor.dtype, device=sensor.device
         )
-        if (
-            device is not None
-            and device.type == "cuda"
-            and cache.device.type == "cpu"
-        ):
+        if device is not None and device.type == "cuda" and cache.device.type == "cpu":
             cache = cache.pin_memory()
 
         if cache.device.type == "cpu":
@@ -250,9 +243,11 @@ class _ObservationBatchingCache(metaclass=Singleton):
     ) -> TensorDict:
         observations = [
             TensorOrNDArrayDict.from_tree(o).map(
-                lambda t: t.numpy()
-                if isinstance(t, torch.Tensor) and t.device.type == "cpu"
-                else t
+                lambda t: (
+                    t.numpy()
+                    if isinstance(t, torch.Tensor) and t.device.type == "cpu"
+                    else t
+                )
             )
             for o in observations
         ]
@@ -262,9 +257,11 @@ class _ObservationBatchingCache(metaclass=Singleton):
         # Order sensors by size, stack and move the largest first
         upload_ordering = sorted(
             range(len(observation_keys)),
-            key=lambda idx: 1
-            if isinstance(observation_tensors[0][idx], numbers.Number)
-            else int(np.prod(observation_tensors[0][idx].shape)),  # type: ignore
+            key=lambda idx: (
+                1
+                if isinstance(observation_tensors[0][idx], numbers.Number)
+                else int(np.prod(observation_tensors[0][idx].shape))
+            ),  # type: ignore
             reverse=True,
         )
 
@@ -287,6 +284,9 @@ class _ObservationBatchingCache(metaclass=Singleton):
                 # path of sensor being an np.ndarray
                 # np.asarray is ~3x slower than checking
                 if isinstance(obs, np.ndarray):
+                    # print(
+                    #     f"batched tensor: {idx} - {i} {batched_tensors[idx][i].shape} - {obs.shape}"
+                    # )
                     batched_tensors[idx][i] = obs  # type: ignore
                 elif isinstance(obs, torch.Tensor):
                     batched_tensors[idx][i].copy_(obs, non_blocking=True)  # type: ignore
@@ -410,16 +410,11 @@ def generate_video(
         return ""
 
     metric_strs = []
-    if (
-        keys_to_include_in_name is not None
-        and len(keys_to_include_in_name) > 0
-    ):
+    if keys_to_include_in_name is not None and len(keys_to_include_in_name) > 0:
         use_metrics_k = [
             k
             for k in metrics
-            if any(
-                to_include_k in k for to_include_k in keys_to_include_in_name
-            )
+            if any(to_include_k in k for to_include_k in keys_to_include_in_name)
         ]
     else:
         use_metrics_k = list(metrics.keys())
@@ -427,14 +422,10 @@ def generate_video(
     for k in use_metrics_k:
         metric_strs.append(f"{k}={metrics[k]:.2f}")
 
-    video_name = f"episode={episode_id}-ckpt={checkpoint_idx}-" + "-".join(
-        metric_strs
-    )
+    video_name = f"episode={episode_id}-ckpt={checkpoint_idx}-" + "-".join(metric_strs)
     if "disk" in video_option:
         assert video_dir is not None
-        images_to_video(
-            images, video_dir, video_name, fps=fps, verbose=verbose
-        )
+        images_to_video(images, video_dir, video_name, fps=fps, verbose=verbose)
     if "tensorboard" in video_option:
         tb_writer.add_video_from_np_images(
             f"episode{episode_id}", checkpoint_idx, images, fps=fps
@@ -442,9 +433,7 @@ def generate_video(
     return video_name
 
 
-def tensor_to_depth_images(
-    tensor: Union[torch.Tensor, List]
-) -> List[np.ndarray]:
+def tensor_to_depth_images(tensor: Union[torch.Tensor, List]) -> List[np.ndarray]:
     r"""Converts tensor (or list) of n image tensors to list of n images.
     Args:
         tensor: tensor containing n image tensors
@@ -461,7 +450,7 @@ def tensor_to_depth_images(
 
 
 def tensor_to_bgr_images(
-    tensor: Union[torch.Tensor, Iterable[torch.Tensor]]
+    tensor: Union[torch.Tensor, Iterable[torch.Tensor]],
 ) -> List[np.ndarray]:
     r"""Converts tensor of n image tensors to list of n BGR images.
     Args:
@@ -622,7 +611,7 @@ def valid_sample(sample: Optional[Any]) -> bool:
 
 
 def img_bytes_2_np_array(
-    x: Tuple[int, torch.Tensor, bytes]
+    x: Tuple[int, torch.Tensor, bytes],
 ) -> Tuple[int, torch.Tensor, bytes, np.ndarray]:
     """Mapper function to convert image bytes in webdataset sample to numpy
     arrays.

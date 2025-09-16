@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import pdb
 from collections import defaultdict, deque
 
 import numpy as np
@@ -518,12 +519,9 @@ class GfxReplayMeasure(Measure):
         self.update_metric(*args, **kwargs)
 
     def update_metric(self, *args, task, **kwargs):
-        if not task._is_episode_active and self._enable_gfx_replay_save:
-            self._metric = (
-                self._sim.gfx_replay_manager.write_saved_keyframes_to_string()
-            )
-        else:
-            self._metric = ""
+        self._metric = (
+            self._sim.gfx_replay_manager.write_saved_keyframes_to_string()
+        )
 
     def get_metric(self, force_get=False):
         if force_get and self._enable_gfx_replay_save:

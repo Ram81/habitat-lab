@@ -56,9 +56,6 @@ class HabitatEvaluator(Evaluator):
 
         current_episode_reward = torch.zeros(envs.num_envs, 1, device="cpu")
 
-        import pdb
-        pdb.set_trace()
-
         test_recurrent_hidden_states = torch.zeros(
             (
                 config.habitat_baselines.num_environments,

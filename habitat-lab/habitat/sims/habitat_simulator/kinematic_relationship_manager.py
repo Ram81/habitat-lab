@@ -118,9 +118,9 @@ class RelationshipGraph:
         :return: The relationship forest with strings instead of ints. The tuple contains: (object string, relationship type). Note, the strings include both object handles and link names, don't use them to backtrace the objects.
         """
 
-        obj_to_children_strings: Dict[
-            str, List[Tuple[str, str]]
-        ] = defaultdict(lambda: [])
+        obj_to_children_strings: Dict[str, List[Tuple[str, str]]] = (
+            defaultdict(lambda: [])
+        )
         # this maps object ids to explainable name strings
         ids_to_obj_names = sutils.get_all_object_ids(sim)
         for parent_id, children in self.obj_to_children.items():
@@ -166,7 +166,10 @@ class KinematicRelationshipManager:
         self.ao_link_map = sutils.get_ao_link_id_map(self.sim)
 
     def initialize_from_obj_to_rec_pairs(
-        self, obj_to_rec: Dict[str, str], receptacles: List[Receptacle], sim_type: str = ""
+        self,
+        obj_to_rec: Dict[str, str],
+        receptacles: List[Receptacle],
+        sim_type: str = "",
     ) -> None:
         """
         Initialize the RelationshipGraph from object to receptacle mappings as found in a RearrangeEpisode.
@@ -189,6 +192,8 @@ class KinematicRelationshipManager:
                 continue
 
             obj = sutils.get_obj_from_handle(self.sim, obj_handle)
+            if obj is None:
+                continue
             assert (
                 obj is not None
             ), f"Object with handle '{obj_handle}' could not be found in the scene. Has the Episode been initialized?"

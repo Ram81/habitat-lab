@@ -1,10 +1,9 @@
 from typing import Optional, cast
 
+import habitat_sim
 import magnum as mn
 import numpy as np
 
-import habitat_sim
-from habitat.datasets.rearrange.samplers.receptacle import AABBReceptacle
 from habitat.sims.habitat_simulator.sim_utilities import get_ao_global_bb
 from habitat.tasks.rearrange.marker_info import MarkerInfo
 from habitat.tasks.rearrange.multi_task.rearrange_pddl import (
@@ -331,17 +330,35 @@ def is_articulated_object_at_state(
     :param cmp: The comparison to use. Can be "greater", "lesser", or "close".
     """
 
-    if not sim_info.check_type_matches(
-        art_obj,
-        SimulatorObjectType.ARTICULATED_RECEPTACLE_ENTITY.value,
-    ):
-        raise ValueError(f"Got unexpected entity {art_obj}")
-    marker = cast(
-        MarkerInfo,
-        sim_info.search_for_entity(
-            art_obj,
-        ),
+    # if not sim_info.check_type_matches(
+    #     art_obj,
+    #     SimulatorObjectType.ARTICULATED_RECEPTACLE_ENTITY.value,
+    # ):
+    #     raise ValueError(f"Got unexpected entity {art_obj}")
+    aom = sim_info.sim.get_articulated_object_manager()
+    is_articulated = aom.get_library_has_handle(art_obj.name.split("|")[0])
+    if not is_articulated:
+        return
+    recep = aom.get_object_by_handle(art_obj.name.split("|")[0])
+
+    name_to_link = {}
+    name_to_link_id = {}
+    for i in range(recep.num_links):
+        name = recep.get_link_name(i)
+        link = recep.get_link_scene_node(i)
+        name_to_link[name] = link
+        name_to_link_id[name] = i
+
+    marker = MarkerInfo(
+        [0, 0, 0], name_to_link["body"], recep, name_to_link_id["body"]
     )
+
+    # marker = cast(
+    #     MarkerInfo,
+    #     sim_info.search_for_entity(
+    #         art_obj,
+    #     ),
+    # )
     cur_value = marker.get_targ_js()
     if cmp == "greater":
         return cur_value > target_val - joint_dist_thresh
@@ -386,12 +403,30 @@ def set_articulated_object_at_state(
         set_obj = rom.get_object_by_id(abs_obj_id)
         move_objs.append(set_obj)
 
-    marker = cast(
-        MarkerInfo,
-        sim_info.search_for_entity(
-            art_obj,
-        ),
+    aom = sim_info.sim.get_articulated_object_manager()
+    is_articulated = aom.get_library_has_handle(art_obj.name.split("|")[0])
+    if not is_articulated:
+        return
+    recep = aom.get_object_by_handle(art_obj.name.split("|")[0])
+
+    name_to_link = {}
+    name_to_link_id = {}
+    for i in range(recep.num_links):
+        name = recep.get_link_name(i)
+        link = recep.get_link_scene_node(i)
+        name_to_link[name] = link
+        name_to_link_id[name] = i
+
+    marker = MarkerInfo(
+        [0, 0, 0], name_to_link["body"], recep, name_to_link_id["body"]
     )
+
+    # marker = cast(
+    #     MarkerInfo,
+    #     sim_info.search_for_entity(
+    #         art_obj,
+    #     ),
+    # )
     pre_link_pos = marker.link_node.transformation.translation
     marker.set_targ_js(target_val)
     post_link_pos = marker.link_node.transformation.translation

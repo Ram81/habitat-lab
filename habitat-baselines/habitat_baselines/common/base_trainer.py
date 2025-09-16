@@ -84,7 +84,7 @@ class BaseTrainer:
             self.config = self._get_resume_state_config_or_new_config(
                 resume_state["config"]
             )
-            prev_ckpt_ind = resume_state["prev_ckpt_ind"]
+            prev_ckpt_ind = resume_state["prev_ckpt_ind"] - 1
         else:
             prev_ckpt_ind = -1
 
@@ -141,7 +141,7 @@ class BaseTrainer:
                             self.config.habitat_baselines.eval_ckpt_path_dir,
                             prev_ckpt_ind,
                         )
-                        time.sleep(2)  # sleep for 2 secs before polling again
+                        time.sleep(20)  # sleep for 2 secs before polling again
                     logger.info(f"=======current_ckpt: {current_ckpt}=======")  # type: ignore
                     prev_ckpt_ind += 1
                     self._eval_checkpoint(

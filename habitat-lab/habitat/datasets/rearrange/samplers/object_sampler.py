@@ -10,10 +10,10 @@ import time
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
+import habitat_sim
 import magnum as mn
 
 import habitat.sims.habitat_simulator.sim_utilities as sutils
-import habitat_sim
 from habitat.core.logging import logger
 from habitat.datasets.rearrange.navmesh_utils import (
     get_largest_island_index,
@@ -62,12 +62,12 @@ class ObjectSampler:
         self._translation_up_offset = translation_up_offset
         self._constrain_to_largest_nav_island = constrain_to_largest_nav_island
 
-        self.receptacle_instances: Optional[
-            List[Receptacle]
-        ] = None  # all receptacles in the scene
-        self.receptacle_candidates: Optional[
-            List[Receptacle]
-        ] = None  # the specific receptacle instances relevant to this sampler
+        self.receptacle_instances: Optional[List[Receptacle]] = (
+            None  # all receptacles in the scene
+        )
+        self.receptacle_candidates: Optional[List[Receptacle]] = (
+            None  # the specific receptacle instances relevant to this sampler
+        )
         self.max_sample_attempts = 100  # number of distinct object|receptacle pairings to try before giving up
         self.max_placement_attempts = 50  # number of times to attempt a single object|receptacle placement pairing
         self.num_objects = num_objects  # tuple of [min,max] objects to sample
@@ -335,6 +335,10 @@ class ObjectSampler:
                     support_object_ids,
                     dbv=dbv,
                 )
+
+                # import pdb
+
+                # pdb.set_trace()
                 if snap_success:
                     logger.info(
                         f"Successfully sampled (snapped) object placement in {num_placement_tries} tries."

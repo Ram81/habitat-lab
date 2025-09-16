@@ -26,10 +26,9 @@ from typing import (
 import ifcfg
 import numpy as np
 import torch
+from habitat import logger
 from omegaconf import DictConfig
 from torch import distributed as distrib
-
-from habitat import logger
 
 T = TypeVar("T")
 
@@ -88,13 +87,11 @@ def resume_state_filename(config: DictConfig, filename_key: str = "") -> str:
 
 
 @overload
-def rank0_only() -> bool:
-    ...
+def rank0_only() -> bool: ...
 
 
 @overload
-def rank0_only(fn: Callable) -> Callable:
-    ...
+def rank0_only(fn: Callable) -> Callable: ...
 
 
 def rank0_only(fn: Optional[Callable] = None) -> Union[Callable, bool]:
@@ -254,7 +251,7 @@ def get_distrib_size() -> Tuple[int, int, int]:
     elif os.environ.get("SLURM_JOBID", None) is not None:
         local_rank = int(os.environ["SLURM_LOCALID"])
         world_rank = int(os.environ["SLURM_PROCID"])
-        world_size = int(os.environ["SLURM_NTASKS"])
+        world_size = int(os.environ.get("SLURM_NTASKS", 1))
     # Otherwise setup for just 1 process, this is nice for testing
     else:
         local_rank = 0
@@ -305,6 +302,16 @@ def init_distrib_slurm(
     distrib.init_process_group(
         backend, store=tcp_store, rank=world_rank, world_size=world_size
     )
+
+    # llocal_rank = os.environ.get("LOCAL_RANK")
+    # lworld_rank = os.environ.get("RANK")
+    # lworld_size = os.environ.get("WORLD_SIZE")
+
+    # local_rank = os.environ.get("SLURM_LOCALID", None)
+    # world_rank = os.environ.get("SLURM_PROCID", None)
+    # world_size = os.environ.get("SLURM_NTASKS", None)
+
+    # print(f"\n\n\n\nInitializing distributed group: Loca: {llocal_rank} - {lworld_rank} - {lworld_size};;; SLURM:: {local_rank} - {world_rank} - {world_size} \n\n\n")
 
     return local_rank, tcp_store
 
